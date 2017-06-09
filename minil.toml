@@ -1,0 +1,6 @@
+name = "Array-2D"
+# badges = ["travis"]
+authority="cpan:AARONRP"
+
+module_maker="ModuleBuildTiny"
+
