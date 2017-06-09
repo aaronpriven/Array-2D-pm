@@ -3,6 +3,9 @@ use 5.008001;
 use strict;
 use warnings;
 
+our $VERSION = "0.001_001";
+$VERSION = eval $VERSION;
+
 # core modules
 use Carp;
 use List::Util(qw/any all max min/);
@@ -10,18 +13,60 @@ use POSIX (qw/floor ceil/);
 use Scalar::Util(qw/reftype blessed/);
 
 # non-core modules
-use namespace::autoclean;
-#use List::Flat(qw/flat/);  ### INCOMPLETE CONVERSION ###
 use List::MoreUtils(qw/natatime/);
-use Params::Validate(qw/:all/);
-
-our $VERSION = "0.001_001";
-$VERSION = eval $VERSION;
+use Params::Validate(qw/validate ARRAYREF HASHREF/);
 
 # this is a deliberately non-encapsulated object that is just
 # an array of arrays (AoA).
 # The object can be treated as an ordinary array of arrays,
 # or have methods invoked on it
+
+### Test for Ref::Util and if present, use it
+BEGIN {
+    my $impl = $ENV{PERL_ARRAY_2D_NO_REF_UTIL}
+      || our $NO_REF_UTIL;
+
+    if ( !$impl && eval { require Ref::Util; 1 } ) {
+        Ref::Util->import('is_plain_arrayref');
+    }
+    else {
+        *is_plain_arrayref = sub { ref( $_[0] ) eq 'ARRAY' };
+    }
+}
+
+### Test for Unicode::GCString and if present, use it
+
+### First, the variable $text_columns_cr is declared.
+### Then, it is set to a reference to code that determines
+### what the future text_columns code should be, and
+### which then in turn changes the variable $text_column_cr
+### to point to that new code.
+
+### Thus the first time it's run, it basically redefines itself
+### to be the proper routine (either one with or without Unicode::GCString).
+
+my $text_columns_cr;
+$text_columns_cr = sub {
+
+    my $impl = $ENV{PERL_ARRAY_2D_NO_GCSTRING}
+      || our $NO_GCSTRING;
+
+    if ( !$impl && eval { require Unicode::GCString; 1 } ) {
+        $text_columns_cr = sub {
+            return Unicode::GCString->new("$_[0]")->columns;
+            # explicit stringification is necessary
+            # since Unicode::GCString doesn't automatically
+            # stringify numbers
+        };
+    }
+    else {
+        $text_columns_cr = sub {
+            return length( $_[0] );
+        };
+    }
+    goto $text_columns_cr;
+
+};
 
 #################
 ### Class methods
@@ -37,13 +82,13 @@ sub new {
         $self = [ [] ];
     }
     elsif ( @rows == 1
-        and u::is_arrayref( $rows[0] )
-        and all { u::is_arrayref($_) } $rows[0]->@* )
+        and is_plain_arrayref( $rows[0] )
+        and all { is_plain_arrayref($_) } $rows[0]->@* )
     {
         $self = $rows[0];
     }
-    elsif ( any { reftype($_) ne 'ARRAY' } @rows ) {
-        croak 'Arguments to ' . __PACKAGE__ . '->new must be arrayrefs (rows)';
+    elsif ( any { not is_plain_arrayref($_) } @rows ) {
+        croak "Arguments to $class->new must be arrayrefs (rows)";
     }
     else {
         $self = [@rows];
@@ -105,8 +150,8 @@ sub new_to_term_width {
     my $array = $params{array};
 
     my $separator = $params{separator};
-    my $sepwidth  = u::u_columns($separator);
-    my $colwidth  = $sepwidth + max( map { u::u_columns($_) } @$array );
+    my $sepwidth  = $text_columns_cr->($separator);
+    my $colwidth  = $sepwidth + max( map { $text_columns_cr->($_) } @$array );
     my $cols      = floor( ( $params{width} + $sepwidth ) / ($colwidth) ) || 1;
 
     # add sepwidth there to compensate for the fact that we don't actually
@@ -206,7 +251,12 @@ my $filetype_from_ext_r = sub {
     my $filespec = shift;
     return unless $filespec;
 
-    my ( $filename, $ext ) = u::file_ext($filespec);
+    my ($ext) = $filespec =~ m/
+                      [.]     # a dot
+                      ([^.]+) # one or more non-dot characters
+                      \z      # end of the string
+                      /x;
+
     my $fext = fc($ext);
 
     if ( $fext eq fc('xlsx') ) {
@@ -261,9 +311,7 @@ my $invocant_cr = sub {
     return ( $invocant, $object ) if defined $object;
     # invocant is a class
 
-    my $callersub = ( caller(1) )[4];
-
-    croak 'No object passed to ' . __PACKAGE__ . $callersub;
+    croak 'No object passed to ' . ( caller(1) )[3];
 
 };
 
@@ -810,7 +858,7 @@ sub tabulate_equal_width {
     my $separator = shift // q[ ];
 
     my %width_of;
-    $width_of{$_} = u::u_columns($_) foreach $class->flattened($self);
+    $width_of{$_} = $text_columns_cr->($_) foreach $class->flattened($self);
 
     my $colwidth = max( values %width_of );
 
@@ -841,7 +889,7 @@ sub tabulate {
 
         my @fields = @{$row};
         for my $this_col ( 0 .. $#fields ) {
-            my $thislength = u::u_columns( $fields[$this_col] ) // 0;
+            my $thislength = $text_columns_cr->( $fields[$this_col] ) // 0;
             if ( not $length_of_col[$this_col] ) {
                 $length_of_col[$this_col] = $thislength;
             }
@@ -905,17 +953,19 @@ sub tsv {
     my ( $class, $orig ) = &$invocant_cr;
     my $self = $class->define($orig);
 
-    my @headers = flat(@_);
+    my @headers = @_;
+    if ( @headers == 1 and is_plain_arrayref( $headers[0] ) ) {
+        @headers = @{ $headers[0] };
+    }
 
     my @lines;
     push @lines, join( "\t", @headers ) if @headers;
-
     foreach my $row ( @{$self} ) {
         my @rowcopy = @{$row};
         foreach (@rowcopy) {
             $_ //= q[];
             if (s/\t/\x{2409}/g) {    # visible symbol for tab
-                $charcarp->( "Tab", "$class->tsv");
+                $charcarp->( "Tab", "$class->tsv" );
             }
 
         }
@@ -924,10 +974,10 @@ sub tsv {
 
     foreach (@lines) {
         if (s/\n/\x{240A}/g) {        # visible symbol for line feed
-            $charcarp->( "Line feed", "$class->tsv");
+            $charcarp->( "Line feed", "$class->tsv" );
         }
         if (s/\r/\x{240D}/g) {        # visible symbol for carriage return
-            $charcarp->( "Carriage return", "$class->tsv");
+            $charcarp->( "Carriage return", "$class->tsv" );
         }
     }
 
@@ -1017,6 +1067,8 @@ sub xlsx {
     return $workbook->close();
 
 } ## tidy end: sub xlsx
+
+### _TEXT_COLUMNS
 
 1;
 
@@ -1487,7 +1539,7 @@ string, or zero:
 
  my $callback = sub { 
      my $val = shift;
-     ! defined $val or $val eq q[]  or $val == 0;
+     ! defined $val or $val eq q[] or $val == 0;
  }
  $obj->prune_callback($callback);
 
@@ -1587,9 +1639,10 @@ So, for example,
  # $arrayref = [ 'a    bbb cc' ,
                  'dddd e   f'] ;
                  
-The width of each element is determined using the
-C<Unicode::GCString->columns()> method, so it will treat composed
-accented characters and double-width Asian characters correctly.
+If the C<Unicode::GCString|Unicode::GCString> module can be loaded,
+its C<columns> method will be used to determine the width of each
+character. This will treat composed accented characters and
+double-width Asian characters correctly.
 
 =item B<tabulated(I<separator>)>
 
@@ -1599,17 +1652,20 @@ line feeds as separators of rows, suitable for sending to a  terminal.
 =item B<< tsv(I<headers>) >>
 
 Returns a single string with the elements of each row delimited by
-tabs,  and rows delimited by line feeds.
+tabs, and rows delimited by line feeds.
 
-If there are any arguments, they will be used first row of text.  The
-idea is that these will be the headers of the columns. It's not really
-any different than putting the column headers as the first element of
-the data, but frequently these are stored separately.
+If there are any arguments, they will be used first as the first
+row of text. The idea is that these will be the headers of the
+columns. It's not really any different than putting the column
+headers as the first element of the data, but frequently these are
+stored separately. If there is only one element and it is a reference
+to an array, that array will be used as the first row of text.
 
 If tabs, carriage returns, or line feeds are present in any element,
 they will be replaced by the Unicode visible symbols for tabs (U+2409),
 line feeds (U+240A), or carriage returns (U+240D). This generates a
-warning.
+warning.  (In the future, this may change to the Replacement Character, 
+U+FFFD.)
 
 =item B<< xlsx(...) >>
 
@@ -1719,11 +1775,11 @@ No filename, or a blank filename, was passed to these methods.
 
 =over
 
-=item Tab character found in array during Actium::O::2Darray->tsv; converted to visible symbol
+=item Tab character found in array during Array::2D->tsv; converted to visible symbol
 
-=item Line feed character found in array during Actium::O::2Darray->tsv; converted to visible symbol
+=item Line feed character found in array during Array::2D->tsv; converted to visible symbol
 
-=item Carriage return character found in array during Actium::O::2Darray->tsv; converted to visible symbol
+=item Carriage return character found in array during Array::2D->tsv; converted to visible symbol
 
 An invalid character for TSV data was found in the array when creating 
 TSV data. It was converted to the Unicode visible symbol for that
@@ -1747,11 +1803,9 @@ Add CSV (and possibly other file type) support to new_from_file.
 
 =item Perl 5.8.1 or higher
 
-=item List::Flat
-
 =item List::MoreUtils
 
-=item namespace::autoclean
+=item Params::Validate
 
 =item File::Slurper
 
@@ -1786,7 +1840,5 @@ later version, or
 =back
 
 This program is distributed in the hope that it will be useful, but
-WITHOUT  ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.
-
-
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
