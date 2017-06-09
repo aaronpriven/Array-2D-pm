@@ -1,10 +1,14 @@
 package Array::2D;
-use 5.008001;
+use 5.022;
 use strict;
 use warnings;
 
+no warnings 'experimental::refaliasing';
+use feature 'refaliasing';
+
 use namespace::autoclean;    
-use List::Flat(qw/flat/);
+#use List::Flat(qw/flat/);  ### INCOMPLETE CONVERSION ###
+use Carp;
 use List::MoreUtils(qw/natatime/);
 use List::Util(qw/any all max min/);
 use POSIX (qw/floor ceil/);
@@ -12,6 +16,9 @@ use Scalar::Util(qw/reftype blessed/);
 
 our $VERSION = "0.001_001";
 $VERSION = eval $VERSION;
+
+my (%PV_TYPE, $EMPTY_STR, $SPACE);
+### INCOMPLETE CONVERSION ####
 
 # this is a deliberately non-encapsulated object that is just
 # an array of arrays (AoA).

@@ -3,4 +3,5 @@ name = "Array-2D"
 authority="cpan:AARONRP"
 
 module_maker="ModuleBuildTiny"
+license="perl_5"
 
