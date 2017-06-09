@@ -1,24 +1,22 @@
 package Array::2D;
-use 5.022;
+use 5.008001;
 use strict;
 use warnings;
 
-no warnings 'experimental::refaliasing';
-use feature 'refaliasing';
-
-use namespace::autoclean;    
-#use List::Flat(qw/flat/);  ### INCOMPLETE CONVERSION ###
+# core modules
 use Carp;
-use List::MoreUtils(qw/natatime/);
 use List::Util(qw/any all max min/);
 use POSIX (qw/floor ceil/);
 use Scalar::Util(qw/reftype blessed/);
 
+# non-core modules
+use namespace::autoclean;
+#use List::Flat(qw/flat/);  ### INCOMPLETE CONVERSION ###
+use List::MoreUtils(qw/natatime/);
+use Params::Validate(qw/:all/);
+
 our $VERSION = "0.001_001";
 $VERSION = eval $VERSION;
-
-my (%PV_TYPE, $EMPTY_STR, $SPACE);
-### INCOMPLETE CONVERSION ####
 
 # this is a deliberately non-encapsulated object that is just
 # an array of arrays (AoA).
@@ -96,31 +94,31 @@ sub new_down {
 sub new_to_term_width {
 
     my $class  = shift;
-    my %params = u::validate(
+    my %params = validate(
         @_,
-        {   array     => { type    => $PV_TYPE{ARRAYREF} },
+        {   array     => { type    => ARRAYREF },
             width     => { default => 80 },
-            separator => { default => $SPACE },
+            separator => { default => q[ ] },
         }
     );
 
-    \my @array = $params{array};
+    my $array = $params{array};
 
     my $separator = $params{separator};
     my $sepwidth  = u::u_columns($separator);
-    my $colwidth  = $sepwidth + max( map { u::u_columns($_) } @array );
-    my $cols = floor( ( $params{width} + $sepwidth ) / ($colwidth) ) || 1;
+    my $colwidth  = $sepwidth + max( map { u::u_columns($_) } @$array );
+    my $cols      = floor( ( $params{width} + $sepwidth ) / ($colwidth) ) || 1;
 
     # add sepwidth there to compensate for the fact that we don't actually
     # print the separator at the end of the line
 
-    my $rows = ceil( @array / $cols );
+    my $rows = ceil( @$array / $cols );
 
-    my $obj = $class->new_down( $rows, @array );
+    my $obj = $class->new_down( $rows, @$array );
 
-    \my @tabulated = $obj->tabulate_equal_width($separator);
+    my $tabulated = $obj->tabulate_equal_width($separator);
 
-    return $obj, \@tabulated;
+    return $obj, $tabulated;
 
 } ## tidy end: sub new_to_term_width
 
@@ -192,7 +190,7 @@ sub new_from_xlsx {
                 $_ = $_->value;
             }
             else {
-                $_ = $EMPTY_STR;
+                $_ = q[];
             }
         }
 
@@ -215,7 +213,7 @@ my $filetype_from_ext_r = sub {
         return 'xlsx';
     }
 
-    if ( u::folded_in( $fext, qw/tsv tab txt/ ) ) {
+    if ( any { $fext eq fc($_) } qw/tsv tab txt/ ) {
         return 'tsv';
     }
 
@@ -588,9 +586,7 @@ sub slice {
     my ( $class, $self ) = &$invocant_cr;
     my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
 
-    state $methodname = __PACKAGE__ . '->slice';
-
-    croak "Arguments to $methodname must not be negative"
+    croak "Arguments to $class->slice must not be negative"
       if any { $_ < 0 } ( $firstcol, $lastcol, $firstrow, $lastrow );
 
     ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
@@ -645,7 +641,7 @@ sub prune {
 
 sub prune_empty {
     my ( $class, $self ) = &$invocant_cr;
-    my $callback = sub { !defined $_ or $_ eq $EMPTY_STR };
+    my $callback = sub { !defined $_ or $_ eq q[] };
     return $class->prune_callback( $self, $callback );
 }
 
@@ -750,7 +746,7 @@ sub define {
     my ( $class, $self ) = &$invocant_cr;
 
     my $callback = sub {
-        $_ //= $EMPTY_STR;
+        $_ //= q[];
     };
     return $class->apply( $self, $callback );
 }
@@ -811,7 +807,7 @@ sub tabulate_equal_width {
     my ( $class, $orig ) = &$invocant_cr;
     my $self = $class->define($orig);
     # makes a copy
-    my $separator = shift // $SPACE;
+    my $separator = shift // q[ ];
 
     my %width_of;
     $width_of{$_} = u::u_columns($_) foreach $class->flattened($self);
@@ -820,12 +816,13 @@ sub tabulate_equal_width {
 
     my @lines;
 
-    foreach \my @fields( @{$self} ) {
+    foreach my $fields ( @{$self} ) {
 
-        for my $j ( 0 .. $#fields - 1 ) {
-            $fields[$j] .= $SPACE x ( $colwidth - $width_of{ $fields[$j] } );
+        for my $j ( 0 .. $#{$fields} - 1 ) {
+            $fields->[$j]
+              .= q[ ] x ( $colwidth - $width_of{ $fields->[$j] } );
         }
-        push @lines, join( $separator, @fields );
+        push @lines, join( $separator, @$fields );
 
     }
 
@@ -837,7 +834,7 @@ sub tabulate {
     my ( $class, $orig ) = &$invocant_cr;
     my $self = $class->define($orig);
 
-    my $separator = shift // $SPACE;
+    my $separator = shift // q[ ];
     my @length_of_col;
 
     foreach my $row ( @{$self} ) {
@@ -863,7 +860,7 @@ sub tabulate {
         for my $this_col ( 0 .. $#fields - 1 ) {
             $fields[$this_col] = sprintf( '%-*s',
                 $length_of_col[$this_col],
-                ( $fields[$this_col] // $EMPTY_STR ) );
+                ( $fields[$this_col] // q[] ) );
         }
         push @lines, join( $separator, @fields );
 
@@ -875,8 +872,8 @@ sub tabulate {
 
 sub tabulated {
     my ( $class, $self ) = &$invocant_cr;
-    \my @lines = $class->tabulate( $self, @_ );
-    return join("\n" , @lines) . "\n";
+    my $lines_r = $class->tabulate( $self, @_ );
+    return join( "\n", @$lines_r ) . "\n";
 }
 
 my $charcarp = sub {
@@ -892,14 +889,11 @@ my $charcarp = sub {
 
 sub flattened {
     my ( $class, $self ) = &$invocant_cr;
-    my @flattened = flat(@$self);
-    # deref there because flat doesn't do blessed objects
+    my @flattened = map { @{$_} } @$self;
     return @flattened;
 }
 
 sub tsv {
-
-    state $methodname = __PACKAGE__ . '->tsv';
 
     # tab-separated-values,
     # suitable for something like File::Slurper::write_text
@@ -914,30 +908,30 @@ sub tsv {
     my @headers = flat(@_);
 
     my @lines;
-    push @lines, u::jointab(@headers) if @headers;
+    push @lines, join( "\t", @headers ) if @headers;
 
     foreach my $row ( @{$self} ) {
         my @rowcopy = @{$row};
         foreach (@rowcopy) {
-            $_ //= $EMPTY_STR;
+            $_ //= q[];
             if (s/\t/\x{2409}/g) {    # visible symbol for tab
-                $charcarp->( "Tab", $methodname );
+                $charcarp->( "Tab", "$class->tsv");
             }
 
         }
-        push @lines, u::jointab(@rowcopy);
+        push @lines, join( "\t", @rowcopy );
     }
 
     foreach (@lines) {
         if (s/\n/\x{240A}/g) {        # visible symbol for line feed
-            $charcarp->( "Line feed", $methodname );
+            $charcarp->( "Line feed", "$class->tsv");
         }
         if (s/\r/\x{240D}/g) {        # visible symbol for carriage return
-            $charcarp->( "Carriage return", $methodname );
+            $charcarp->( "Carriage return", "$class->tsv");
         }
     }
 
-    my $str = join("\n" , @lines) . "\n";
+    my $str = join( "\n", @lines ) . "\n";
 
     return $str;
 
@@ -946,9 +940,9 @@ sub tsv {
 sub file {
     my ( $class, $self ) = &$invocant_cr;
 
-    my %params = u::validate(
+    my %params = validate(
         @_,
-        {   headers     => { type => $PV_TYPE{ARRAYREF}, optional => 1 },
+        {   headers     => { type => ARRAYREF, optional => 1 },
             output_file => 1,
             type        => 0,
         }
@@ -979,10 +973,10 @@ sub file {
 
 sub xlsx {
     my ( $class, $self ) = &$invocant_cr;
-    my %params = u::validate(
+    my %params = validate(
         @_,
-        {   headers     => { type => $PV_TYPE{ARRAYREF}, optional => 1 },
-            format      => { type => $PV_TYPE{HASHREF},  optional => 1 },
+        {   headers     => { type => ARRAYREF, optional => 1 },
+            format      => { type => HASHREF,  optional => 1 },
             output_file => 1,
         }
     );
@@ -1493,7 +1487,7 @@ string, or zero:
 
  my $callback = sub { 
      my $val = shift;
-     ! defined $val or $val eq $EMPTY_STR  or $val == 0;
+     ! defined $val or $val eq q[]  or $val == 0;
  }
  $obj->prune_callback($callback);
 
