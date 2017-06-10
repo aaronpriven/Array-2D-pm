@@ -78,17 +78,34 @@ return values is ommitted in void context.
 ## CLASS METHODS
 
 - **new( _row\_ref_, _row\_ref_...)**
+- **new( _aoa\_ref_)**
 
     Returns a new Array::2D object.  It accepts a list of array 
     references as arguments, which become the rows of the object.
 
+    If it receives only one argument, and that argument is an array of
+    arrays -- that is, a reference to an unblessed array, and in turn
+    that array only contains references to unblessed arrays -- then the
+    existing AoA structure is blessed into Array::2D. If you don't want it
+    to bless the existing AoA structure, use `clone`. 
+
+    If you think it's possible that the detect-an-AoA-structure could
+    give a false positive (you want a new object that might have only one row,
+    where each entry in that row is an reference to an unblessed array),
+    use `Array::2D-`bless ( \[ @your\_rows \] )>.
+
 - **bless(_aoa\_ref_)**
 
-    Takes an existing non-object array of arrays and returns an 
-    Array::2D object. Returns the new object.
+    Takes an existing array of arrays and makes it into an 
+    Array::2D object. Returns the object.
 
     Note that this blesses the original array, so any other references to
-    this  data structures will become a reference to the object, too.
+    this data structure will become a reference to the object, too.
+
+    If the array of arrays is already an Array::2D object, it will do
+    nothing but return it. If it's some other kind of object,
+    it will throw an exception, as Perl doesn't allow the re-blessing of
+    objects into other classes.
 
 - **new\_across($chunksize, _element_, _element_, ...)**
 
@@ -128,7 +145,7 @@ return values is ommitted in void context.
 
 - **new\_to\_term\_width (...)**
 
-    A combination of _new\_down_ and _tabulate_.  Takes three named
+    A combination of _new\_down_ and _tabulate\_equal\_width_.  Takes three named
     arguments:
 
     - array => _arrayref_
@@ -137,7 +154,7 @@ return values is ommitted in void context.
 
     - separator => _separator_
 
-        A scalar to be passed to ->tabulate(). The default is a single space.
+        A scalar to be passed to ->tabulate\_equal\_width(). The default is a single space.
 
     - width => _width_
 
@@ -145,7 +162,7 @@ return values is ommitted in void context.
 
     The method determines the number of columns required, creates an
     Array::2D object of that number of columns using new\_down, and
-    then returns first the object and then the results of ->tabulate() on
+    then returns first the object and then the results of ->tabulate\_equal\_width() on
     that object.
 
 ## CLASS/OBJECT METHODS
@@ -448,7 +465,7 @@ In the latter case, the array of arrays need not be blessed.
 
         my $callback = sub { 
             my $val = shift;
-            ! defined $val or $val eq $EMPTY_STR  or $val == 0;
+            ! defined $val or $val eq q[] or $val == 0;
         }
         $obj->prune_callback($callback);
 
@@ -537,7 +554,7 @@ In the latter case, the array of arrays need not be blessed.
 
     Returns an arrayref of strings, where each string consists of the
     elements of each row, padded with enough spaces to ensure that each
-    column is the same width.
+    column has a consistent width.
 
     The columns will be separated by whatever string is passed to
     `tabulate()`.  If nothing is passed, a single space will be used.
@@ -549,31 +566,39 @@ In the latter case, the array of arrays need not be blessed.
         
         # $arrayref = [ 'a    bbb cc' ,
                         'dddd e   f'] ;
-                        
 
-    The width of each element is determined using the
-    `Unicode::GCString-`columns()> method, so it will treat composed
-    accented characters and double-width Asian characters correctly.
+    If the `Unicode::GCString|Unicode::GCString` module can be loaded,
+    its `columns` method will be used to determine the width of each
+    character. This will treat composed accented characters and
+    double-width Asian characters correctly.
 
 - **tabulated(_separator_)**
 
-    Like `tabulate()`, but returns the data as a single string,  using
-    line feeds as separators of rows, suitable for sending to a  terminal.
+    Like `tabulate()`, but returns the data as a single string, using
+    line feeds as separators of rows, suitable for sending to a terminal.
+
+- **tabulate\_equal\_width(_separator_)**
+
+    Like `tabulate()`, but instead of each column having its own width,
+    all columns have the same width.
 
 - **tsv(_headers_)**
 
     Returns a single string with the elements of each row delimited by
-    tabs,  and rows delimited by line feeds.
+    tabs, and rows delimited by line feeds.
 
-    If there are any arguments, they will be used first row of text.  The
-    idea is that these will be the headers of the columns. It's not really
-    any different than putting the column headers as the first element of
-    the data, but frequently these are stored separately.
+    If there are any arguments, they will be used first as the first
+    row of text. The idea is that these will be the headers of the
+    columns. It's not really any different than putting the column
+    headers as the first element of the data, but frequently these are
+    stored separately. If there is only one element and it is a reference
+    to an array, that array will be used as the first row of text.
 
     If tabs, carriage returns, or line feeds are present in any element,
     they will be replaced by the Unicode visible symbols for tabs (U+2409),
     line feeds (U+240A), or carriage returns (U+240D). This generates a
-    warning.
+    warning.  (In the future, this may change to the Replacement Character, 
+    U+FFFD.)
 
 - **xlsx(...)**
 
@@ -666,9 +691,9 @@ In the latter case, the array of arrays need not be blessed.
 
 ## WARNINGS
 
-- Tab character found in array during Actium::O::2Darray->tsv; converted to visible symbol
-- Line feed character found in array during Actium::O::2Darray->tsv; converted to visible symbol
-- Carriage return character found in array during Actium::O::2Darray->tsv; converted to visible symbol
+- Tab character found in array during Array::2D->tsv; converted to visible symbol
+- Line feed character found in array during Array::2D->tsv; converted to visible symbol
+- Carriage return character found in array during Array::2D->tsv; converted to visible symbol
 
     An invalid character for TSV data was found in the array when creating 
     TSV data. It was converted to the Unicode visible symbol for that
@@ -681,9 +706,8 @@ In the latter case, the array of arrays need not be blessed.
 # DEPENDENCIES
 
 - Perl 5.8.1 or higher
-- List::Flat
 - List::MoreUtils
-- namespace::autoclean
+- Params::Validate
 - File::Slurper
 - Spreadsheet::ParseXLSX
 - Excel::Writer::XLSX
@@ -708,5 +732,5 @@ later version, or
 - the Artistic License version 2.0.
 
 This program is distributed in the hope that it will be useful, but
-WITHOUT  ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
