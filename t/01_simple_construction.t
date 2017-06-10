@@ -2,14 +2,14 @@ use strict;
 use Test::More 0.98;
 use Test::Fatal;
 
-plan(tests => 20);
+plan( tests => 20 );
 # yes, I have a plan(), but do I have an environmental_impact_report() and
 # an alternatives_analysis() ?
 
 use Array::2D;
 use Scalar::Util(qw/blessed refaddr/);
 
-note ("Testing new, new_across, new_down, bless");
+note("Testing new, new_across, new_down, bless");
 
 ##########
 # ->new()
@@ -82,10 +82,10 @@ is_blessed_correctly( $new_from_ref, "Object created via new_across()" );
 # ->new_down()
 
 my @down_flat = ( 'a', 'b', 'c', '1', '2', '3', 'X', 'Y', 'Z', -1, -2, -3 );
-my $down_2d = Array::2D->new_across( 4, @across_flat );
+my $down_2d = Array::2D->new_down( 3, @down_flat );
 
 is_deeply( $down_2d, $from_array_test, 'new_down() creates object' );
-is_blessed_correctly( $new_from_ref, "Object created via new_down()" );
+is_blessed_correctly( $down_2d, "Object created via new_down()" );
 
 ##############
 # ->bless()
@@ -94,15 +94,17 @@ my $unblessed_sample = [ [qw/i j/], [qw/k l/] ];
 my $from_unblessed_sample = Array::2D->bless($unblessed_sample);
 
 ok( $unblessed_sample == $from_unblessed_sample,
-    "bless() returns same ref when that ref is unblessed" );
-is_blessed_correctly( $from_unblessed_sample, "Result of bless() on unblessed ref" );
-
+    "bless() returns same ref when that ref is unblessed"
+);
+is_blessed_correctly( $from_unblessed_sample,
+    "Result of bless() on unblessed ref" );
 
 my $blessed_sample = bless [ [] ], 'Array::2D';
 my $reblessed_sample = Array::2D->bless($blessed_sample);
 
 ok( $reblessed_sample == $blessed_sample,
-    "Bless returns same ref when that ref is blessed into Array::2D" );
+    "Bless returns same ref when that ref is blessed into Array::2D"
+);
 is_blessed_correctly( $reblessed_sample,
     "Result of bless() when ref is blessed into Array::2D" );
 
@@ -120,7 +122,6 @@ like(
 sub is_blessed_correctly {
     my $obj         = shift;
     my $description = shift;
-    my $class       = blessed $obj;
     ok( blessed($obj) eq 'Array::2D', "blessed correctly: $description" );
 }
 1;
