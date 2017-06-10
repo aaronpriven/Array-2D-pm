@@ -37,8 +37,8 @@ BEGIN {
 ### Test for Unicode::GCString and if present, use it
 
 ### First, the variable $text_columns_cr is declared.
-### Then, it is set to a reference to code that 
-###    a) determines what the future text_columns code should be, 
+### Then, it is set to a reference to code that
+###    a) determines what the future text_columns code should be,
 ###    b) sets the variable $text_column_cr to point to that new code, and
 ###    c) then jumps to that new code.
 
@@ -1169,16 +1169,34 @@ return values is ommitted in void context.
 
 =item B<new( I<row_ref>, I<row_ref>...)>
 
+=item B<new( I<aoa_ref>)>
+
 Returns a new Array::2D object.  It accepts a list of array 
 references as arguments, which become the rows of the object.
 
+If it receives only one argument, and that argument is an array of
+arrays -- that is, a reference to an unblessed array, and in turn
+that array only contains references to unblessed arrays -- then the
+existing AoA structure is blessed into Array::2D. If you don't want it
+to bless the existing AoA structure, use C<clone>. 
+
+If you think it's possible that the detect-an-AoA-structure could
+give a false positive (you want a new object that might have only one row,
+where each entry in that row is an reference to an unblessed array),
+use C<Array::2D->bless ( [ @your_rows ] )>.
+
 =item B<bless(I<aoa_ref>)>
 
-Takes an existing non-object array of arrays and returns an 
-Array::2D object. Returns the new object.
+Takes an existing array of arrays and makes it into an 
+Array::2D object. Returns the object.
 
 Note that this blesses the original array, so any other references to
-this  data structures will become a reference to the object, too.
+this data structure will become a reference to the object, too.
+
+If the array of arrays is already an Array::2D object, it will do
+nothing but return it. If it's some other kind of object,
+it will throw an exception, as Perl doesn't allow the re-blessing of
+objects into other classes.
 
 =item B<new_across($chunksize, I<element>, I<element>, ...)>
 
@@ -1214,7 +1232,7 @@ returns
   
 =item B<new_to_term_width (...)>
 
-A combination of I<new_down> and I<tabulate>.  Takes three named
+A combination of I<new_down> and I<tabulate_equal_width>.  Takes three named
 arguments:
 
 =over
@@ -1225,7 +1243,7 @@ A one-dimensional list of scalars.
 
 =item separator => I<separator>
 
-A scalar to be passed to ->tabulate(). The default is a single space.
+A scalar to be passed to ->tabulate_equal_width(). The default is a single space.
 
 =item width => I<width>
 
@@ -1235,7 +1253,7 @@ The width of the terminal. If not specified, defaults to 80.
 
 The method determines the number of columns required, creates an
 Array::2D object of that number of columns using new_down, and
-then returns first the object and then the results of ->tabulate() on
+then returns first the object and then the results of ->tabulate_equal_width() on
 that object.
 
 =back
@@ -1626,7 +1644,7 @@ value.)
 
 Returns an arrayref of strings, where each string consists of the
 elements of each row, padded with enough spaces to ensure that each
-column is the same width.
+column has a consistent width.
 
 The columns will be separated by whatever string is passed to
 C<tabulate()>.  If nothing is passed, a single space will be used.
@@ -1638,7 +1656,7 @@ So, for example,
  
  # $arrayref = [ 'a    bbb cc' ,
                  'dddd e   f'] ;
-                 
+
 If the C<Unicode::GCString|Unicode::GCString> module can be loaded,
 its C<columns> method will be used to determine the width of each
 character. This will treat composed accented characters and
@@ -1646,8 +1664,13 @@ double-width Asian characters correctly.
 
 =item B<tabulated(I<separator>)>
 
-Like C<tabulate()>, but returns the data as a single string,  using
-line feeds as separators of rows, suitable for sending to a  terminal.
+Like C<tabulate()>, but returns the data as a single string, using
+line feeds as separators of rows, suitable for sending to a terminal.
+
+=item B<tabulate_equal_width(I<separator>)>
+
+Like C<tabulate()>, but instead of each column having its own width,
+all columns have the same width.
 
 =item B<< tsv(I<headers>) >>
 
