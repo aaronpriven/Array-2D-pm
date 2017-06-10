@@ -10,7 +10,7 @@
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : "2"
+      "version" : 2
    },
    "name" : "Array-2D",
    "no_index" : {
@@ -42,11 +42,14 @@
       },
       "runtime" : {
          "requires" : {
-            "perl" : "5.022"
+            "List::MoreUtils" : "0",
+            "Params::Validate" : "0",
+            "perl" : "5.008001"
          }
       },
       "test" : {
          "requires" : {
+            "Test::Fatal" : "0",
             "Test::More" : "0.98"
          }
       }
@@ -68,5 +71,5 @@
    "x_contributors" : [
       "Aaron Priven <aaron@priven.com>"
    ],
-   "x_serialization_backend" : "JSON::PP version 2.27300"
+   "x_serialization_backend" : "JSON::PP version 2.94"
 }
