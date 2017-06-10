@@ -327,6 +327,7 @@ sub clone {
 
 sub unblessed {
     my ( $class, $self ) = &$invocant_cr;
+    return $self if not blessed $self;
     my $new = [ @{$self} ];
     return $new;
 }
