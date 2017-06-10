@@ -1284,8 +1284,10 @@ in the original 2D array.
 
 =item B<unblessed()>
 
-Returns a new, unblessed array, containing the same rows as the 2D
-array object.
+Returns an unblessed array containing the same rows as the 2D
+array object. If called as a class method and given an argument that is
+already unblessed, will return the argument. Otherwise will create
+a new, unblessed array.
 
 This is usually pointless, as Perl lets you ignore the object-ness of
 any object and access the data inside, but sometimes certain modules
@@ -1293,7 +1295,8 @@ don't like to break object encapsulation, and this will allow getting
 around that.
 
 Note that while modifying the elements inside the rows will modify the 
-original 2D array, modifying the outer arrayref will not. So:
+original 2D array, modifying the outer arrayref will not (unless
+that arrayref was not blessed in the first place). So:
 
  my $unblessed = $array2d->unblessed;
 
@@ -1304,7 +1307,7 @@ original 2D array, modifying the outer arrayref will not. So:
     # does not modify original object
  
 This can be confusing, so it's best to avoid modifying the result of
-C<unblessed>.
+C<unblessed>. Use C<clone_unblessed> instead.
 
 =item B<clone_unblessed()>
 
@@ -1313,7 +1316,7 @@ in the 2D array object.
 
 The array of arrays will be different, but if any of the elements of
 the  2D array are themselves references, they will refer to the same
-things  as in the original 2D array.
+things as in the original 2D array.
 
 =item B<<< new_from_tsv(I<tsv_string, tsv_string...>) >>>
 
