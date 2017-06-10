@@ -37,10 +37,10 @@ BEGIN {
 ### Test for Unicode::GCString and if present, use it
 
 ### First, the variable $text_columns_cr is declared.
-### Then, it is set to a reference to code that determines
-### what the future text_columns code should be, and
-### which then in turn changes the variable $text_column_cr
-### to point to that new code.
+### Then, it is set to a reference to code that 
+###    a) determines what the future text_columns code should be, 
+###    b) sets the variable $text_column_cr to point to that new code, and
+###    c) then jumps to that new code.
 
 ### Thus the first time it's run, it basically redefines itself
 ### to be the proper routine (either one with or without Unicode::GCString).
@@ -298,7 +298,7 @@ sub new_from_file {
 } ## tidy end: sub new_from_file
 
 ################################################################
-### shims allowing being called as either class or object method
+### shim allowing being called as either class or object method
 
 my $invocant_cr = sub {
     my $invocant = shift;
