@@ -1,21 +1,19 @@
 use strict;
-use Test::More 0.98;
-use Test::Fatal;
+use warnings;
 
-use Array::2D;
-use Scalar::Util(qw/blessed refaddr/);
-
-note "Testing clone, unbless, clone_unblessed";
-
-use Cwd;
-
-do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
-  // die "Can't load array-2d.pl";
-
+BEGIN {
+    do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
+      // die "Can't load array-2d.pl";
+}
 our ( $sample_ref, $sample_test, $sample_obj );
+
+plan( tests => 25 );
 
 ##########
 # ->clone
+
+note 'Testing clone()';
+ok( Array::2D->can('clone'), 'Can clone()' );
 
 my $clone_from_ref = Array::2D->clone($sample_ref);
 
@@ -41,21 +39,28 @@ ok( all_row_refs_are_different( $clone_from_obj, $sample_ref ),
 ##############
 # ->unblessed
 
+note 'Testing unblessed()';
+ok( Array::2D->can('unblessed'), 'Can unblessed()' );
+
 my $unblessed_from_ref = Array::2D->unblessed($sample_ref);
-is_deeply( $unblessed_from_ref, $sample_test, 'unblessed() from ref returns AoA' );
-isnt_blessed($unblessed_from_ref, "unblessed from reference");
-note 'References are '
-  . ( $unblessed_from_ref == $sample_ref ? 'equal' : 'not equal' );
-  
-my $unblessed_from_obj = $sample_obj->unblessed();  
+is_deeply( $unblessed_from_ref, $sample_test,
+    'unblessed() from ref returns AoA' );
+isnt_blessed( $unblessed_from_ref, "unblessed from reference" );
+
+cmp_ok( $unblessed_from_ref, '==', $sample_ref,
+    'Returned same reference when passed unblessed' );
+
+my $unblessed_from_obj = $sample_obj->unblessed();
 is_deeply( $unblessed_from_obj, $sample_test, '$obj->unblessed returns AoA' );
-isnt_blessed($unblessed_from_obj, "unblessed from object");
-note 'References are '
-  . ( $unblessed_from_obj == $sample_ref ? 'equal' : 'not equal' );
-  
+isnt_blessed( $unblessed_from_obj, "unblessed from object" );
+cmp_ok( $unblessed_from_obj, '!=', $sample_obj,
+    'Returned difference reference when passed blessed' );
 
 ####################
 # ->clone_unblessed
+
+note 'Testing clone_unblessed()';
+ok( Array::2D->can('clone_unblessed'), 'Can clone_unblessed()' );
 
 my $unblessedclone_from_ref = Array::2D->clone_unblessed($sample_ref);
 
@@ -88,4 +93,3 @@ sub all_row_refs_are_different {
     return 1;
 }
 
-done_testing;
