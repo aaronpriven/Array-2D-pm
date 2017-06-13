@@ -74,6 +74,10 @@ structure that is not an object.
 - Where rows are columns are removed from the object (as with any of the 
 `pop_*`, `shift_*`, `del_*` methods), time-consuming assemblage of
 return values is ommitted in void context.
+- Some care is taken to ensure that rows are not autovivified.  Normally, if the 
+highest row in an arrayref-of-arrayrefs is 2, and a program
+attempts to read the value of $aoa->\[3\]->\[$anything\], Perl will create 
+an empty third row.  This module avoids autovification from just reading data.
 
 ## CLASS METHODS
 
@@ -107,6 +111,10 @@ return values is ommitted in void context.
 
     Note that this blesses the original array, so any other references to
     this data structure will become a reference to the object, too.
+
+- **empty**
+
+    Returns a new, empty Array::2D object.
 
 - **new\_across(_chunksize, element, element, ..._)**
 
@@ -161,6 +169,36 @@ return values is ommitted in void context.
     Array::2D object of that number of columns using new\_down, and
     then returns first the object and then the results of ->tabulate\_equal\_width() on
     that object.
+
+- **new\_from\_tsv(_tsv\_string, tsv\_string..._)**
+
+    Returns a new object from a string containing tab-delimited values. 
+    The string is first split into lines (delimited by carriage returns,
+    line feeds, a CR/LF pair, or other characters matching Perl's \\R) and
+    then split into values by tabs.
+
+    If multiple strings are provided, they will be considered additional
+    lines. So, one can pass the contents of an entire TSV file, the series
+    of lines in the TSV file, or a combination of two.
+
+- **new\_from\_xlsx(_xlsx\_filespec, sheet\_requested_)**
+
+    Returns a new object from a worksheet in an Excel XLSX file, consisting
+    of the rows and columns of that sheet. The _sheet\_requested_ parameter
+    is passed directly to the `->worksheet` method of 
+    `Spreadsheet::ParseXLSX`, which accepts a name or an index. If nothing
+    is passed, it requests sheet 0 (the first sheet).
+
+- **new\_from\_file(_filespec_)**
+
+    Returns a new object from a file on disk. If the file has the extension
+    .xlsx, passes that file to `new_from_xlsx`. If the file has the
+    extension .txt, .tab, or .tsv, slurps the file in memory and passes the
+    result to `new_from_tsv`.
+
+    (Future versions might accept CSV files as well, and test the contents
+    of .txt files to see whether they are comma-delimited or
+    tab-delimited.)
 
 ## CLASS/OBJECT METHODS
 
@@ -219,40 +257,14 @@ In the latter case, the array of arrays need not be blessed.
     the  2D array are themselves references, they will refer to the same
     things as in the original 2D array.
 
-- **new\_from\_tsv(_tsv\_string, tsv\_string..._)**
+- **is\_empty()**
 
-    Returns a new object from a string containing tab-delimited values. 
-    The string is first split into lines (delimited by carriage returns,
-    line feeds, a CR/LF pair, or other characters matching Perl's \\R) and
-    then split into values by tabs.
-
-    If multiple strings are provided, they will be considered additional
-    lines. So, one can pass the contents of an entire TSV file, the series
-    of lines in the TSV file, or a combination of two.
-
-- **new\_from\_xlsx(_xlsx\_filespec, sheet\_requested_)**
-
-    Returns a new object from a worksheet in an Excel XLSX file, consisting
-    of the rows and columns of that sheet. The _sheet\_requested_ parameter
-    is passed directly to the `->worksheet` method of 
-    `Spreadsheet::ParseXLSX`, which accepts a name or an index. If nothing
-    is passed, it requests sheet 0 (the first sheet).
-
-- **new\_from\_file(_filespec_)**
-
-    Returns a new object from a file on disk. If the file has the extension
-    .xlsx, passes that file to `new_from_xlsx`. If the file has the
-    extension .txt, .tab, or .tsv, slurps the file in memory and passes the
-    result to `new_from_tsv`.
-
-    (Future versions might accept CSV files as well, and test the contents
-    of .txt files to see whether they are comma-delimited or
-    tab-delimited.)
+    Returns a true value if the object is empty, false otherwise.
 
 - **height()**
 
-    Returns the number of rows in the object.  Here for completeness, as 
-    `@{$object}` works just as well.
+    Returns the number of rows in the object.  Empty objects return 
+    0, although there is always one empty arrayref in every object.
 
 - **width()**
 
@@ -261,8 +273,8 @@ In the latter case, the array of arrays need not be blessed.
 
 - **last\_row()**
 
-    Returns the index of the last row of the object. Like `height()`, this
-    is here mainly for completeness, as `$#{$object}` works just as well.
+    Returns the index of the last row of the object.  Empty objects return
+    \-1, although there is always one empty arrayref in every object.
 
 - **last\_col()**
 
@@ -271,12 +283,14 @@ In the latter case, the array of arrays need not be blessed.
 
 - **element(_row\_idx, col\_idx_)**
 
-    Returns the element in the given row and column. Just a slower way of
-    saying `$array2d->[_row_idx_][_col_idx_]`.
+    Returns the element in the given row and column. A slower way of
+    saying `$array2d->[_row_idx_][_col_idx_]`, except that it avoids
+    autovivification.  Like that construct, it will return undef if the element
+    does not already exist.
 
 - **row(_row\_idx_)**
 
-    Returns the elements in the given row.  A slower way of saying  `@{$array2d->[_row_idx_]}`.
+    Returns the elements in the given row.  A slower way of saying  `@{$array2d->[_row_idx_]}`, except that it avoids autovivification.
 
 - **col(_col\_idx_)**
 

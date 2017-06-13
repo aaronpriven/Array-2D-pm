@@ -1411,8 +1411,6 @@ Array::2D object of that number of columns using new_down, and
 then returns first the object and then the results of ->tabulate_equal_width() on
 that object.
 
-=back
-
 =item B<<< new_from_tsv(I<tsv_string, tsv_string...>) >>>
 
 Returns a new object from a string containing tab-delimited values. 
@@ -1442,6 +1440,8 @@ result to C<new_from_tsv>.
 (Future versions might accept CSV files as well, and test the contents
 of .txt files to see whether they are comma-delimited or
 tab-delimited.)
+
+=back
 
 =head2 CLASS/OBJECT METHODS
 
