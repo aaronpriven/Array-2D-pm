@@ -1349,6 +1349,10 @@ This saves the time and memory needed to copy the rows.
 Note that this blesses the original array, so any other references to
 this data structure will become a reference to the object, too.
 
+=item B<empty>
+
+Returns a new, empty Array::2D object.
+
 =item B<new_across(I<chunksize, element, element, ...>)>
 
 Takes a flat list and returns it as an Array::2D object, 
@@ -1409,6 +1413,36 @@ that object.
 
 =back
 
+=item B<<< new_from_tsv(I<tsv_string, tsv_string...>) >>>
+
+Returns a new object from a string containing tab-delimited values. 
+The string is first split into lines (delimited by carriage returns,
+line feeds, a CR/LF pair, or other characters matching Perl's \R) and
+then split into values by tabs.
+
+If multiple strings are provided, they will be considered additional
+lines. So, one can pass the contents of an entire TSV file, the series
+of lines in the TSV file, or a combination of two.
+
+=item B<<< new_from_xlsx(I<xlsx_filespec, sheet_requested>) >>>
+
+Returns a new object from a worksheet in an Excel XLSX file, consisting
+of the rows and columns of that sheet. The I<sheet_requested> parameter
+is passed directly to the C<< ->worksheet >> method of 
+C<Spreadsheet::ParseXLSX>, which accepts a name or an index. If nothing
+is passed, it requests sheet 0 (the first sheet).
+
+=item B<<< new_from_file(I<filespec>) >>>
+
+Returns a new object from a file on disk. If the file has the extension
+.xlsx, passes that file to C<new_from_xlsx>. If the file has the
+extension .txt, .tab, or .tsv, slurps the file in memory and passes the
+result to C<new_from_tsv>.
+
+(Future versions might accept CSV files as well, and test the contents
+of .txt files to see whether they are comma-delimited or
+tab-delimited.)
+
 =head2 CLASS/OBJECT METHODS
 
 All class/object methods can be called as an object method on a blessed
@@ -1468,40 +1502,15 @@ The array of arrays will be different, but if any of the elements of
 the  2D array are themselves references, they will refer to the same
 things as in the original 2D array.
 
-=item B<<< new_from_tsv(I<tsv_string, tsv_string...>) >>>
+=item B<is_empty()>
 
-Returns a new object from a string containing tab-delimited values. 
-The string is first split into lines (delimited by carriage returns,
-line feeds, a CR/LF pair, or other characters matching Perl's \R) and
-then split into values by tabs.
-
-If multiple strings are provided, they will be considered additional
-lines. So, one can pass the contents of an entire TSV file, the series
-of lines in the TSV file, or a combination of two.
-
-=item B<<< new_from_xlsx(I<xlsx_filespec, sheet_requested>) >>>
-
-Returns a new object from a worksheet in an Excel XLSX file, consisting
-of the rows and columns of that sheet. The I<sheet_requested> parameter
-is passed directly to the C<< ->worksheet >> method of 
-C<Spreadsheet::ParseXLSX>, which accepts a name or an index. If nothing
-is passed, it requests sheet 0 (the first sheet).
-
-=item B<<< new_from_file(I<filespec>) >>>
-
-Returns a new object from a file on disk. If the file has the extension
-.xlsx, passes that file to C<new_from_xlsx>. If the file has the
-extension .txt, .tab, or .tsv, slurps the file in memory and passes the
-result to C<new_from_tsv>.
-
-(Future versions might accept CSV files as well, and test the contents
-of .txt files to see whether they are comma-delimited or
-tab-delimited.)
+Returns a true value if the object is empty, false otherwise.
 
 =item B<height()>
 
-Returns the number of rows in the object.  Here for completeness, as 
-C<@{$object}> works just as well.
+Returns the number of rows in the object.  Empty objects return 
+0, although there is always one empty arrayref in every object.
+
 
 =item B<width()>
 
@@ -1510,8 +1519,8 @@ the longest row.)
 
 =item B<last_row()>
 
-Returns the index of the last row of the object. Like C<height()>, this
-is here mainly for completeness, as C<$#{$object}> works just as well.
+Returns the index of the last row of the object.  Empty objects return
+-1, although there is always one empty arrayref in every object.
 
 =item B<last_col()>
 
