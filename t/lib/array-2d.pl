@@ -1,3 +1,9 @@
+use strict;
+use Test::More 0.98;
+use lib './lib';
+use Array::2D;
+use Scalar::Util(qw/blessed refaddr/);
+
 our $sample_test = [
     [ 'Michael',     31, 'San Mateo',     'Vancouver',       'Emily' ],
     [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
@@ -43,6 +49,8 @@ our $sample_obj = Array::2D->new(
     [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
     [ 'Joseph', 0, undef, 'San Francisco' ],
 );
+
+# $sample_obj is used when testing object invocation
 
 use Scalar::Util('blessed');
 
