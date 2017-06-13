@@ -4,7 +4,6 @@ use Test::More 0.98;
 use lib './lib';
 use Array::2D;
 use Scalar::Util(qw/blessed refaddr/);
-
 use Test::Fatal;
 
 sub is_blessed {
@@ -14,183 +13,164 @@ sub is_blessed {
 }
 
 sub isnt_blessed {
-   my $obj = shift;
-   my $description = shift // q[];
-   is (blessed($obj) , undef, "Not blessed: $description" );
+    my $obj = shift;
+    my $description = shift // q[];
+    is( blessed($obj), undef, "Not blessed: $description" );
 }
 
 # cannot use the array-2d.pl library for is_blessed and isnt_blessed
 # because array-2d.pl uses new() in it and we haven't tested that yet
 
-plan( tests => 31 );
+plan( tests => 34 );
 # yes, I have a plan(), but do I have an environmental_impact_report() and
 # an alternatives_analysis() ?
 
-note 'Testing ->new()';
+############
+# ->empty
 
-ok(Array::2D->can('new'), 'Can new()');
+note 'Testing ->empty()';
 
-{ 
-    # scoping so all the lexical variables 
-    # go out of scope before we get to testing bless()
+can_ok( 'Array::2D', 'empty' );
 
-# EMPTY
+my $empty_obj_from_empty = Array::2D->empty();
+is_deeply( $empty_obj_from_empty, [ [] ], "empty(): New empty object created" );
+is_blessed( $empty_obj_from_empty, "empty(): new empty object" );
 
-my $empty_obj = Array::2D->new();
-is_deeply( $empty_obj, [ [] ], "new(): New empty object created" );
-is_blessed( $empty_obj, "new(): new empty object" );
+########################
+# ->new() and ->bless()
 
-# FROM A REF
+for my $method (qw/new bless/) {
 
-my $from_ref
-  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
-my $from_ref_test
-  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
+    note "Testing ->$method()";
 
-my $new_from_ref = Array::2D->new($from_ref);
-is_deeply( $new_from_ref, $from_ref_test,
-    "new(): Object created from reference" );
-is_blessed( $new_from_ref, "new(): Object created from reference" );
-isnt_blessed( $from_ref, 'new(): passed reference itself is not blessed' );
+    can_ok( 'Array::2D', $method );
 
-# FROM EXISTING OBJECT
+    # EMPTY
 
-my $existing_obj = bless [ [] ], 'Array::2D';
-my $new_from_existing_obj = Array::2D->new($existing_obj);
-cmp_ok( $new_from_existing_obj, '==', $existing_obj,
-    'new(): already-blessed object is returned as is' );
+    my $empty_obj = Array::2D->$method();
+    is_deeply( $empty_obj, [ [] ], "$method(): New empty object created" );
+    is_blessed( $empty_obj, "$method(): new empty object" );
 
-# FROM BROKEN ARRAY WITH A NON-REF MEMBER
+    # FROM ARRAY
 
-my @broken = ( [qw/a b/], 'not_a_ref', [qw/c d/] );
+    my @array
+      = ( [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ],
+      );
 
-my $exception = exception( sub { Array::2D->new(@broken); } );
-isnt( $exception, undef,
-    "new() throws exception with a row that's a non-reference" );
-like(
-    $exception,
-    qr/must be unblessed arrayrefs/i,
-    "new() dies with correct message with non-reference row"
-);
+    my $from_array_test
+      = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ],
+      ];
 
-# FROM A SINGLE REF (a row)
+    my $from_array = Array::2D->$method(@array);
+    is_deeply( $from_array, $from_array_test,
+        "$method(): Object created from array" );
+    is_blessed( $from_array, "$method(): Object created from array" );
 
-my $one_row_ref = [qw/a b c/];
-my $one_row_test = [ [qw/a b c/] ];
+    # FROM EXISTING OBJECT
 
-my $one_row_obj = Array::2D->new($one_row_ref);
+    my $existing_obj = bless [ [] ], 'Array::2D';
+    my $new_from_existing_obj = Array::2D->$method($existing_obj);
+    cmp_ok( $new_from_existing_obj, '==', $existing_obj,
+        "$method(): already-blessed object is returned as is'" );
 
-is_deeply( $new_from_ref, $from_ref,
-    "new(): Object created from reference with one row" );
-is_blessed( $new_from_ref,
-    "new(): Object created from reference with one row" );
+    # FROM BROKEN ARRAY WITH A NON-REF MEMBER
 
-# FROM ARRAY
+    my @broken = ( [qw/a b/], 'not_a_ref', [qw/c d/] );
 
-my @array
-  = ( [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], );
+    my $exception = exception( sub { Array::2D->$method(@broken); } );
+    isnt( $exception, undef,
+        "$method() throws exception with a row that's a non-reference" );
+    like(
+        $exception,
+        qr/must be unblessed arrayrefs/i,
+        "$method() dies with correct message with non-reference row"
+    );
 
-my $from_array_test
-  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
+    # FROM A SINGLE REF (a row)
 
-my $from_array = Array::2D->new(@array);
-is_deeply( $from_array, $from_array_test, 'new(): Object created from array' );
-is_blessed( $new_from_ref, "new(): Object created from array" );
+    my $one_row_ref = [qw/a b c/];
+    my $one_row_test = [ [qw/a b c/] ];
+
+    my $one_row_obj = Array::2D->$method($one_row_ref);
+
+    is_deeply( $one_row_obj, $one_row_test,
+        "$method(): Object created from reference with one row" );
+    is_blessed( $one_row_obj,
+        "$method(): Object created from reference with one row" );
+
+    # this is done in the loop only to get the "note" text 
+    # in the right place
+    if ( $method eq 'new' ) {
+
+        # ->new() FROM A REF
+
+        my $from_ref = [
+            [ 'a', '1', 'X', -1 ],
+            [ 'b', '2', 'Y', -2 ],
+            [ 'c', '3', 'Z', -3 ],
+        ];
+        my $from_ref_test = [
+            [ 'a', '1', 'X', -1 ],
+            [ 'b', '2', 'Y', -2 ],
+            [ 'c', '3', 'Z', -3 ],
+        ];
+
+        my $new_from_ref = Array::2D->new($from_ref);
+        is_deeply( $new_from_ref, $from_ref_test,
+            "new(): Object created from reference" );
+        is_blessed( $new_from_ref, "new(): Object created from reference" );
+        isnt_blessed( $from_ref,
+            'new(): passed reference itself is not blessed' );
+
+    } ## tidy end: if ( $method eq 'new' )
+    else {
+
+        # ->bless() FROM A REF
+
+        my $from_ref_bless = [
+            [ 'a', '1', 'X', -1 ],
+            [ 'b', '2', 'Y', -2 ],
+            [ 'c', '3', 'Z', -3 ],
+        ];
+        my $from_ref__bless_test = [
+            [ 'a', '1', 'X', -1 ],
+            [ 'b', '2', 'Y', -2 ],
+            [ 'c', '3', 'Z', -3 ],
+        ];
+        my $new_from_ref_bless = Array::2D->bless($from_ref_bless);
+        cmp_ok( $new_from_ref_bless, '==', $from_ref_bless,
+            'bless(): arrayref of arrayrefs is itself returned' );
+        is_blessed( $new_from_ref_bless, "bless(): arrayref of arrayrefs" );
+
+    } ## tidy end: else [ if ( $method eq 'new' )]
 
 }
-
-############
-# ->bless()
-
-note 'Testing ->bless()';
-
-ok(Array::2D->can('new'), 'Can bless()');
-
-# EMPTY
-
-my $empty_obj = Array::2D->bless();
-is_deeply( $empty_obj, [ [] ], "bless(): New empty object created" );
-is_blessed( $empty_obj, "bless(): new empty object" );
-
-# FROM A REF
-
-my $from_ref
-  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
-my $from_ref_test
-  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
-
-my $new_from_ref = Array::2D->bless($from_ref);
-cmp_ok( $new_from_ref, '==', $from_ref,
-    'bless(): arrayref of arrayrefs is itself returned' );
-is_blessed( $new_from_ref, "bless(): arrayref of arrayrefs" );
-
-# FROM EXISTING OBJECT
-
-my $existing_obj = bless [ [] ], 'Array::2D';
-my $new_from_existing_obj = Array::2D->bless($existing_obj);
-cmp_ok( $new_from_existing_obj, '==', $existing_obj,
-    'bless(): already-blessed object is returned as is' );
-
-# FROM BROKEN ARRAY WITH A NON-REF MEMBER
-
-my @broken = ( [qw/a b/], 'not_a_ref', [qw/c d/] );
-
-my $exception = exception( sub { Array::2D->bless(@broken); } );
-isnt( $exception, undef,
-    "bless() throws exception with a row that's a non-reference" );
-like(
-    $exception,
-    qr/must be unblessed arrayrefs/i,
-    "bless() dies with correct message with non-reference row"
-);
-
-# FROM A SINGLE REF (a row)
-
-my $one_row_ref = [qw/a b c/];
-my $one_row_test = [ [qw/a b c/] ];
-
-my $one_row_obj = Array::2D->bless($one_row_ref);
-
-is_deeply( $new_from_ref, $from_ref,
-    "bless(): Object created from reference with one row" );
-is_blessed( $new_from_ref,
-    "bless(): Object created from reference with one row" );
-
-# FROM ARRAY
-
-my @array
-  = ( [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], );
-
-my $from_array_test
-  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
-
-my $from_array = Array::2D->bless(@array);
-is_deeply( $from_array, $from_array_test, 'bless(): Object created from array' );
-is_blessed( $new_from_ref, "bless(): Object created from array" );
 
 #################
 # ->new_across()
 
+my $across_and_down_test
+  = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ], ];
+
 note 'Testing new_across()';
 
-ok(Array::2D->can('new_across'), 'Can new_across()');
+can_ok( 'Array::2D', 'new_across' );
+
 my @across_flat = ( 'a', '1', 'X', -1, 'b', '2', 'Y', -2, 'c', '3', 'Z', -3 );
 my $across_2d = Array::2D->new_across( 4, @across_flat );
 
-is_deeply( $across_2d, $from_array_test, 'new_across() creates object' );
-is_blessed( $new_from_ref, "Object created via new_across()" );
+is_deeply( $across_2d, $across_and_down_test, 'new_across() creates object' );
+is_blessed( $across_2d, "Object created via new_across()" );
 
 ###############
 # ->new_down()
 
-note 'Testing new_down()';
-
-ok(Array::2D->can('new_down'), 'Can new_down()');
+can_ok( 'Array::2D', 'new_down' );
 
 my @down_flat = ( 'a', 'b', 'c', '1', '2', '3', 'X', 'Y', 'Z', -1, -2, -3 );
 my $down_2d = Array::2D->new_down( 3, @down_flat );
 
-is_deeply( $down_2d, $from_array_test, 'new_down() creates object' );
+is_deeply( $down_2d, $across_and_down_test, 'new_down() creates object' );
 is_blessed( $down_2d, "Object created via new_down()" );
 
 1;

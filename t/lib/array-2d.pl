@@ -5,10 +5,9 @@ use Array::2D;
 use Scalar::Util(qw/blessed refaddr/);
 
 our $sample_test = [
-    [ 'Michael',     31, 'San Mateo',     'Vancouver',       'Emily' ],
     [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
-    [ 'Emily',       31, 'Dallas',        'Aix-en-Provence', 'Michael' ],
+    [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
     [ 'Nicholas',    -14, ],
     [ 'Madison', 8, 'San Francisco' ],
     [ 'Andrew',  -15, ],
@@ -21,10 +20,9 @@ our $sample_test = [
 # $sample_test is the reference to which things are compared
 
 our $sample_ref = [
-    [ 'Michael',     31, 'San Mateo',     'Vancouver',       'Emily' ],
     [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
-    [ 'Emily',       31, 'Dallas',        'Aix-en-Provence', 'Michael' ],
+    [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
     [ 'Nicholas',    -14, ],
     [ 'Madison', 8, 'San Francisco' ],
     [ 'Andrew',  -15, ],
@@ -37,10 +35,9 @@ our $sample_ref = [
 # $sample_ref is used when testing class method invocation
 
 our $sample_obj = Array::2D->new(
-    [ 'Michael',     31, 'San Mateo',     'Vancouver',       'Emily' ],
     [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
-    [ 'Emily',       31, 'Dallas',        'Aix-en-Provence', 'Michael' ],
+    [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
     [ 'Nicholas',    -14, ],
     [ 'Madison', 8, 'San Francisco' ],
     [ 'Andrew',  -15, ],
@@ -52,16 +49,43 @@ our $sample_obj = Array::2D->new(
 
 # $sample_obj is used when testing object invocation
 
+our $one_row_obj
+  = Array::2D->new( [ 'Michael', 31, 'San Mateo', 'Vancouver', 'Emily' ], );
+
+our $one_row_ref = [ [ 'Michael', 31, 'San Mateo', 'Vancouver', 'Emily' ], ];
+
+our $one_col_ref = [
+    ['Times'],  ['Helvetica'], ['Courier'], ['Lucida'],
+    ['Myriad'], ['Minion'],    ['Syntax'],  ['Johnston'],
+    ['Univers'], ['Frutiger'],
+];
+
+our $one_col_obj = Array::2D->new(
+    ['Times'],  ['Helvetica'], ['Courier'], ['Lucida'],
+    ['Myriad'], ['Minion'],    ['Syntax'],  ['Johnston'],
+    ['Univers'], ['Frutiger'],
+);
+
+# $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref used for
+# testing push, insert, etc.
+
+our $empty_ref = [ [] ];
+our $empty_obj = Array::2D->new();
+
 use Scalar::Util('blessed');
 
 sub is_blessed {
-    my $obj         = shift;
+    my $obj = shift;
     my $description = shift // q[];
-    is (blessed($obj), 'Array::2D', "blessed correctly: $description" );
+    is( blessed($obj), 'Array::2D', "blessed correctly: $description" );
 }
 
 sub isnt_blessed {
-   my $obj = shift;
-   my $description = shift // q[];
-   is (blessed($obj) , undef, "Not blessed: $description" );
+    my $obj = shift;
+    my $description = shift // q[];
+    is( blessed($obj), undef, "Not blessed: $description" );
+}
+
+sub a2dcan {
+    can_ok('Array::2D', @_);
 }
