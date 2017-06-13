@@ -73,9 +73,7 @@ $text_columns_cr = sub {
 
 sub empty {
     my $class = shift;
-    my $self = [ [] ];
-    CORE::bless $self, $class;
-    return $self;
+    return CORE::bless [], $class;
 }
 
 sub new {
@@ -366,13 +364,12 @@ sub clone_unblessed {
 
 sub is_empty {
     my ( $class, $self ) = &$invocant_cr;
-    return ( @$self == 1 and @{ $self->[0] } == 0 );
+    return not( scalar @$self );
 }
 
 sub height {
     my ( $class, $self ) = &$invocant_cr;
-    return scalar @$self unless $class->is_empty($self);
-    return 0;
+    return scalar @$self;
 }
 
 sub width {
@@ -382,8 +379,7 @@ sub width {
 
 sub last_row {
     my ( $class, $self ) = &$invocant_cr;
-    return $#{$self} unless $class->is_empty($self);
-    return -1;
+    return $#{$self};
 }
 
 sub last_col {
@@ -396,7 +392,6 @@ sub last_col {
 
 sub element {
     my ( $class, $self ) = &$invocant_cr;
-    return undef if $class->is_empty($self);
     my $rowidx = shift;
     return undef if $rowidx > $#{$self};
     my $colidx = shift;
@@ -406,10 +401,11 @@ sub element {
 
 sub row {
     my ( $class, $self ) = &$invocant_cr;
-    return if $class->is_empty($self);
     my $rowidx = shift || 0;
     return () if $rowidx > $#{$self};
-    return @{ $self->[$rowidx] };
+    my @row = @{ $self->[$rowidx] };
+    pop @row while @row and not defined $row[-1];
+    return @row;
 }
 
 sub col {
@@ -419,34 +415,35 @@ sub col {
     my @col = map { $#{$_} <= $colidx ? $_->[$colidx] : undef } @{$self};
     # the element if it's not less than the highest column of that row,
     # otherwise undef
-    return ( ( none { defined($_) } @col ) ? () : @col );
+    pop @col while @col and not defined $col[-1];
+    return @col;
 }
 
 sub rows {
     my ( $class, $self ) = &$invocant_cr;
-    return $class->empty() if $class->is_empty($self);
-    my @returned = map { $#{$self} <= $_ ? $self->[$_] : [] } @_;
+    my @row_indices = @_;
+    my $rows
+      = $class->new( map { $#{$self} <= $_ ? $self->[$_] : [] } @row_indices );
     # the row if it's less than or equal to the highest row idx, othewise
     # an empty ref
-    return $class->empty() if ( none {@$_} @returned );
-    return $class->bless( \@returned );
+    $rows->prune();
+    return $rows;
 }
 
 sub cols {
     my ( $class, $self ) = &$invocant_cr;
-    return $class->empty() if $class->is_empty($self);
-    my @returned = map { [ $class->col( $self, $_ ) ] } @_;
-    return $class->empty() if ( none {@$_} @returned );
-    return $class->bless( \@returned );
+
+    my @col_indices = @_;
+    my $cols        = $class->empty;
+    foreach my $colidx (@col_indices) {
+        push @$cols, [ map { $self->[$_][$colidx] } 0 .. $#{$self} ];
+    }
+    $cols->prune;
+    return $cols;
 }
 
 sub slice {
     my ( $class, $self ) = &$invocant_cr;
-
-    if ( $class->is_empty($self) ) {
-        return $class->empty() if defined wantarray;
-        return;
-    }
 
     my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
 
@@ -460,7 +457,7 @@ sub slice {
 
     if ( $self_lastrow < $firstrow ) {
         return $class->empty() if defined wantarray;
-        @{$self} = ( [] );
+        @{$self} = ();
         return;
     }
 
@@ -473,9 +470,11 @@ sub slice {
 
     if ( $rows_lastcol < $firstcol ) {
         return $class->empty() if defined wantarray;
-        @{$self} = ( [] );
+        @{$self} = ();
         return;
     }
+
+    $lastcol = $rows_lastcol if $rows_lastcol < $lastcol;
 
     my $new = $class->cols( $rows, $firstcol .. $lastcol );
     return $new if defined wantarray;
@@ -562,25 +561,29 @@ sub set_slice {
 
 sub shift_row {
     my ( $class, $self ) = &$invocant_cr;
-    return () if $class->is_empty($self);
-    return @{ shift @{$self} };
+    return () unless @{$self};
+    my @row = @{ shift @{$self} };
+    pop @row while @row and not defined $row[-1];
+    return @row;
 }
 
 sub shift_col {
     my ( $class, $self ) = &$invocant_cr;
-    return () if $class->is_empty($self);
-    return map { shift @{$_} } @{$self};
+    my @col = map { shift @{$_} } @{$self};
+    pop @col while @col and not defined $col[-1];
+    return @col;
 }
 
 sub pop_row {
     my ( $class, $self ) = &$invocant_cr;
-    return () if $class->is_empty($self);
-    return @{ pop @{$self} };
+    return () unless @{$self};
+    my @row = @{ pop @{$self} };
+    pop @row while @row and not defined $row[-1];
+    return @row;
 }
 
 sub pop_col {
     my ( $class, $self ) = &$invocant_cr;
-    return () if $class->is_empty($self);
     my $last_col = $class->last_col($self);
     return $class->del_col( $self, $last_col );
 }
@@ -729,14 +732,16 @@ sub del_row {
     my ( $class, $self ) = &$invocant_cr;
     my $row_idx = shift;
 
-    my $deleted;
+    return () unless @{$self};
+
+    my @deleted;
     if ( defined wantarray ) {
-        $deleted = $class->row( $self, $row_idx );
+        @deleted = $class->row( $self, $row_idx );
     }
 
     splice( @{$self}, $row_idx, 1 );
 
-    return $deleted if defined wantarray;
+    return @deleted if defined wantarray;
     return;
 }
 
@@ -744,22 +749,27 @@ sub del_col {
     my ( $class, $self ) = &$invocant_cr;
     my $col_idx = @_;
 
-    my $deleted;
+    my @deleted;
     if ( defined wantarray ) {
-        $deleted = $class->col( $self, $col_idx );
+        @deleted = $class->col( $self, $col_idx );
     }
 
     foreach my $row ( @{$self} ) {
         splice( @{$row}, $col_idx, 1 );
     }
 
-    return $deleted if defined wantarray;
+    return @deleted if defined wantarray;
     return;
 }
 
 sub del_rows {
     my ( $class, $self ) = &$invocant_cr;
     my @row_idxs = @_;
+
+    unless (@$self) {
+        return $class->empty if defined wantarray;
+        return;
+    }
 
     my $deleted;
     if ( defined wantarray ) {
@@ -772,7 +782,7 @@ sub del_rows {
 
     return $deleted if defined wantarray;
     return;
-}
+} ## tidy end: sub del_rows
 
 sub del_cols {
     my ( $class, $self ) = &$invocant_cr;
@@ -783,7 +793,7 @@ sub del_cols {
         $deleted = $class->cols( $self, @col_idxs );
     }
 
-    foreach my $col_idx (@_) {
+    foreach my $col_idx ( reverse sort @_ ) {
         foreach my $row ( @{$self} ) {
             splice( @{$row}, $col_idx, 1 );
         }
@@ -799,7 +809,10 @@ sub del_cols {
 sub transpose {
     my ( $class, $self ) = &$invocant_cr;
 
-    return $class->empty if $class->is_empty($self);
+    unless ( @{$self} ) {
+        return $class->empty if defined wantarray;
+        return $self;
+    }
 
     my $new = [];
 
@@ -850,35 +863,30 @@ sub prune_callback {
     }
 
     # remove final blank rows
-    while ( @{$self} and all { $callback->() } $self->[-1] ) {
+    while (
+        @{$self}
+        and (  !defined $self->[-1]
+            or @{ $self->[-1] } == 0
+            or all { $callback->() } @{ $self->[-1] } )
+      )
+    {
         pop @{$self};
     }
 
-    # if it's all blank, make it an empty AoA and return it
-    unless ( @{$self} ) {
-        if ( defined wantarray ) {
-            return $class->new();
-        }
-        @{$self} = ( [] );
-        return $self;
-    }
+    # return if it's all blank
+    return $self unless ( @{$self} );
 
     # remove final blank columns
 
-    my $last_col = $class->last_col($self);
-
-    while ( $last_col > -1
-        and all { $callback->() } $class->col( $self, $last_col ) )
-    {
-        $last_col--;
-
-        # set index of the last item of each row to the new $last_col
-        $#{$_} = $last_col for @{$self};
-
+    foreach my $row_r ( @{$self} ) {
+        while ( @{$row_r} ) {
+            local $_ = $row_r->[-1];
+            last if not $callback->();
+            pop @$row_r;
+        }
     }
 
     return $self;
-
 } ## tidy end: sub prune_callback
 
 sub apply {
@@ -896,8 +904,7 @@ sub apply {
     for my $row ( @{$self} ) {
         for my $idx ( 0 .. $#{$row} ) {
             for ( $row->[$idx] ) {
-
-                # localize $_ to $row->[$idx]. Autovivifies.
+                # localize $_ to $row->[$idx]. Autovivifies the row.
                 $callback->( $row, $idx );
             }
         }
@@ -1508,9 +1515,7 @@ Returns a true value if the object is empty, false otherwise.
 
 =item B<height()>
 
-Returns the number of rows in the object.  Empty objects return 
-0, although there is always one empty arrayref in every object.
-
+Returns the number of rows in the object.  
 
 =item B<width()>
 
@@ -1519,8 +1524,7 @@ the longest row.)
 
 =item B<last_row()>
 
-Returns the index of the last row of the object.  Empty objects return
--1, although there is always one empty arrayref in every object.
+Returns the index of the last row of the object.  
 
 =item B<last_col()>
 
@@ -2085,4 +2089,4 @@ later version, or
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
