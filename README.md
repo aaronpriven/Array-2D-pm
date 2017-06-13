@@ -263,8 +263,7 @@ In the latter case, the array of arrays need not be blessed.
 
 - **height()**
 
-    Returns the number of rows in the object.  Empty objects return 
-    0, although there is always one empty arrayref in every object.
+    Returns the number of rows in the object.  
 
 - **width()**
 
@@ -273,13 +272,14 @@ In the latter case, the array of arrays need not be blessed.
 
 - **last\_row()**
 
-    Returns the index of the last row of the object.  Empty objects return
-    \-1, although there is always one empty arrayref in every object.
+    Returns the index of the last row of the object.  If the object is
+    empty, returns -1.
 
 - **last\_col()**
 
     Returns the index of the last column of the object. (The index of the
-    last element in the longest row.)
+    last element in the longest row.) If the object is
+    empty, returns -1.
 
 - **element(_row\_idx, col\_idx_)**
 
@@ -791,4 +791,4 @@ later version, or
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

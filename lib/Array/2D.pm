@@ -374,16 +374,19 @@ sub height {
 
 sub width {
     my ( $class, $self ) = &$invocant_cr;
+    return 0 unless @{$self};
     return max( map { scalar @{$_} } @{$self} );
 }
 
 sub last_row {
     my ( $class, $self ) = &$invocant_cr;
+    return -1 unless @{$self};
     return $#{$self};
 }
 
 sub last_col {
     my ( $class, $self ) = &$invocant_cr;
+    return -1 unless @{$self};
     return max( map { $#{$_} } @{$self} );
 }
 
@@ -1524,12 +1527,14 @@ the longest row.)
 
 =item B<last_row()>
 
-Returns the index of the last row of the object.  
+Returns the index of the last row of the object.  If the object is
+empty, returns -1.
 
 =item B<last_col()>
 
 Returns the index of the last column of the object. (The index of the
-last element in the longest row.)
+last element in the longest row.) If the object is
+empty, returns -1.
 
 =item B<element(I<row_idx, col_idx>)>
 
