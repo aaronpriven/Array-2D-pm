@@ -8,7 +8,7 @@ $VERSION = eval $VERSION;
 
 # core modules
 use Carp;
-use List::Util(qw/any all max min/);
+use List::Util(qw/any all max min none/);
 use POSIX (qw/floor ceil/);
 use Scalar::Util(qw/reftype blessed/);
 
@@ -71,6 +71,13 @@ $text_columns_cr = sub {
 #################
 ### Class methods
 
+sub empty {
+    my $class = shift;
+    my $self = [ [] ];
+    CORE::bless $self, $class;
+    return $self;
+}
+
 sub new {
 
     if (    @_ == 2
@@ -97,9 +104,7 @@ sub bless {
     my @rows = @_;
 
     if ( @rows == 0 ) {    # if no arguments, new anonymous AoA
-        $self = [ [] ];
-        CORE::bless $self, $class;
-        return $self;
+        return $class->empty;
     }
 
     if ( @rows == 1 ) {
@@ -198,21 +203,6 @@ sub new_to_term_width {
     return $obj, $tabulated;
 
 } ## tidy end: sub new_to_term_width
-
-#sub bless {
-#    my $class = shift;
-#    my $self  = shift;
-#
-#    my $selfclass = blessed($self);
-#
-#    if ( defined $selfclass ) {
-#        return $self if $selfclass eq $class;
-#        croak 'Cannot re-bless existing object';
-#    }
-#
-#    CORE::bless $self, $class;
-#    return $self;
-#}
 
 ############################################
 #### Class methods - new from various files
@@ -374,9 +364,15 @@ sub clone_unblessed {
 ### find the last index, or the number of elements
 ### (like scalar @array or $#array for 1D arrays)
 
+sub is_empty {
+    my ( $class, $self ) = &$invocant_cr;
+    return ( @$self == 1 and @{ $self->[0] } == 0 );
+}
+
 sub height {
     my ( $class, $self ) = &$invocant_cr;
-    return scalar @{$self};
+    return scalar @$self unless $class->is_empty($self);
+    return 0;
 }
 
 sub width {
@@ -386,7 +382,8 @@ sub width {
 
 sub last_row {
     my ( $class, $self ) = &$invocant_cr;
-    return $#{$self};
+    return $#{$self} unless $class->is_empty($self);
+    return -1;
 }
 
 sub last_col {
@@ -399,63 +396,91 @@ sub last_col {
 
 sub element {
     my ( $class, $self ) = &$invocant_cr;
+    return undef if $class->is_empty($self);
     my $rowidx = shift;
+    return undef if $rowidx > $#{$self};
     my $colidx = shift;
+    return undef if $colidx > $#{ $self->[$rowidx] };
     return $self->[$rowidx][$colidx];
 }
 
 sub row {
     my ( $class, $self ) = &$invocant_cr;
+    return if $class->is_empty($self);
     my $rowidx = shift || 0;
+    return () if $rowidx > $#{$self};
     return @{ $self->[$rowidx] };
 }
 
 sub col {
     my ( $class, $self ) = &$invocant_cr;
+    return if $class->is_empty($self);
     my $colidx = shift || 0;
-    return map { $_->[$colidx] } @{$self};
+    my @col = map { $#{$_} <= $colidx ? $_->[$colidx] : undef } @{$self};
+    # the element if it's not less than the highest column of that row,
+    # otherwise undef
+    return ( ( none { defined($_) } @col ) ? () : @col );
 }
 
 sub rows {
     my ( $class, $self ) = &$invocant_cr;
-    my @returned = map { $self->[$_] } @_;
+    return $class->empty() if $class->is_empty($self);
+    my @returned = map { $#{$self} <= $_ ? $self->[$_] : [] } @_;
+    # the row if it's less than or equal to the highest row idx, othewise
+    # an empty ref
+    return $class->empty() if ( none {@$_} @returned );
     return $class->bless( \@returned );
 }
 
 sub cols {
     my ( $class, $self ) = &$invocant_cr;
+    return $class->empty() if $class->is_empty($self);
     my @returned = map { [ $class->col( $self, $_ ) ] } @_;
+    return $class->empty() if ( none {@$_} @returned );
     return $class->bless( \@returned );
 }
 
 sub slice {
     my ( $class, $self ) = &$invocant_cr;
+
+    if ( $class->is_empty($self) ) {
+        return $class->empty() if defined wantarray;
+        return;
+    }
+
     my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
 
     croak "Arguments to $class->slice must not be negative"
       if any { $_ < 0 } ( $firstcol, $lastcol, $firstrow, $lastrow );
 
     ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
-      if $firstrow > $lastrow;
+      if $lastrow < $firstrow;
 
-    ( $firstcol, $lastcol ) = ( $lastcol, $firstcol )
-      if $firstcol > $lastcol;
-
-    my $self_lastcol = $class->lastcol($self);
     my $self_lastrow = $#{$self};
 
-    $lastcol = min( $lastcol, $self_lastcol );
-    $lastrow = min( $lastrow, $self_lastrow );
-
-    my $new = $class->cols( $self, $firstcol .. $lastcol )
-      ->rows( $firstrow .. $lastrow );
-
-    if ( defined wantarray ) {
-        return $new;
+    if ( $self_lastrow < $firstrow ) {
+        return $class->empty() if defined wantarray;
+        @{$self} = ( [] );
+        return;
     }
 
-    @{$self} = @{$new};
+    my $rows = $class->rows( $self, $firstrow .. $lastrow );
 
+    ( $firstcol, $lastcol ) = ( $lastcol, $firstcol )
+      if $lastcol < $firstcol;
+
+    my $rows_lastcol = $rows->lastcol($self);
+
+    if ( $rows_lastcol < $firstcol ) {
+        return $class->empty() if defined wantarray;
+        @{$self} = ( [] );
+        return;
+    }
+
+    my $new = $class->cols( $rows, $firstcol .. $lastcol );
+    return $new if defined wantarray;
+
+    @{$self} = @{$new};
     return;
 
 } ## tidy end: sub slice
@@ -537,21 +562,25 @@ sub set_slice {
 
 sub shift_row {
     my ( $class, $self ) = &$invocant_cr;
+    return () if $class->is_empty($self);
     return @{ shift @{$self} };
 }
 
 sub shift_col {
     my ( $class, $self ) = &$invocant_cr;
+    return () if $class->is_empty($self);
     return map { shift @{$_} } @{$self};
 }
 
 sub pop_row {
     my ( $class, $self ) = &$invocant_cr;
+    return () if $class->is_empty($self);
     return @{ pop @{$self} };
 }
 
 sub pop_col {
     my ( $class, $self ) = &$invocant_cr;
+    return () if $class->is_empty($self);
     my $last_col = $class->last_col($self);
     return $class->del_col( $self, $last_col );
 }
@@ -769,6 +798,8 @@ sub del_cols {
 
 sub transpose {
     my ( $class, $self ) = &$invocant_cr;
+
+    return $class->empty if $class->is_empty($self);
 
     my $new = [];
 
@@ -1272,6 +1303,13 @@ Where rows are columns are removed from the object (as with any of the
 C<pop_*>, C<shift_*>, C<del_*> methods), time-consuming assemblage of
 return values is ommitted in void context.
 
+=item *
+
+Some care is taken to ensure that rows are not autovivified.  Normally, if the 
+highest row in an arrayref-of-arrayrefs is 2, and a program
+attempts to read the value of $aoa->[3]->[$anything], Perl will create 
+an empty third row.  This module avoids autovification from just reading data.
+
 =back
 
 =head2 CLASS METHODS
@@ -1482,13 +1520,15 @@ last element in the longest row.)
 
 =item B<element(I<row_idx, col_idx>)>
 
-Returns the element in the given row and column. Just a slower way of
-saying C<< $array2d->[I<row_idx>][I<col_idx>] >>.
+Returns the element in the given row and column. A slower way of
+saying C<< $array2d->[I<row_idx>][I<col_idx>] >>, except that it avoids
+autovivification.  Like that construct, it will return undef if the element
+does not already exist.
 
 =item B<row(I<row_idx>)>
 
 Returns the elements in the given row.  A slower way of saying  C<<
-@{$array2d->[I<row_idx>]} >>.
+@{$array2d->[I<row_idx>]} >>, except that it avoids autovivification.
 
 =item B<col(I<col_idx>)>
 
