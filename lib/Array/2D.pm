@@ -73,6 +73,24 @@ $text_columns_cr = sub {
 
 sub new {
 
+    if (    @_ == 2
+        and is_plain_arrayref( $_[1] )
+        and all { is_plain_arrayref($_) } @{ $_[1] } )
+    {
+        my $class = shift;
+        my $aoa   = shift;
+
+        my $self = [ @{$aoa} ];
+        CORE::bless $self, $class;
+        return $self;
+    }
+
+    goto &bless;
+
+}
+
+sub bless {
+
     my $class = shift;
     my $self;
 
@@ -80,24 +98,38 @@ sub new {
 
     if ( @rows == 0 ) {    # if no arguments, new anonymous AoA
         $self = [ [] ];
+        CORE::bless $self, $class;
+        return $self;
     }
-    elsif ( @rows == 1
-        and is_plain_arrayref( $rows[0] )
-        and all { is_plain_arrayref($_) } $rows[0]->@* )
-    {
-        $self = $rows[0];
+
+    if ( @rows == 1 ) {
+        my $blessing = blessed( $rows[0] );
+        if ( defined($blessing) and $blessing eq $class ) {
+            # already an object
+            $self = $rows[0];
+            return $self;
+        }
+
+        if ( is_plain_arrayref( $rows[0] )
+            and all { is_plain_arrayref($_) } @{ $rows[0] } )
+        {
+            my $self = $rows[0];
+            CORE::bless $self, $class;
+            return $self;
+        }
     }
-    elsif ( any { not is_plain_arrayref($_) } @rows ) {
-        croak "Arguments to $class->new must be arrayrefs (rows)";
-    }
-    else {
-        $self = [@rows];
+
+    $self = [@rows];
+
+    if ( any { not is_plain_arrayref($_) } @rows ) {
+        croak
+"Arguments to $class->new or $class->blessed must be unblessed arrayrefs (rows)";
     }
 
     CORE::bless $self, $class;
     return $self;
 
-} ## tidy end: sub new
+} ## tidy end: sub bless
 
 sub new_across {
     my $class = shift;
@@ -167,20 +199,20 @@ sub new_to_term_width {
 
 } ## tidy end: sub new_to_term_width
 
-sub bless {
-    my $class = shift;
-    my $self  = shift;
-
-    my $selfclass = blessed($self);
-
-    if ( defined $selfclass ) {
-        return $self if $selfclass eq $class;
-        croak 'Cannot re-bless existing object';
-    }
-
-    CORE::bless $self, $class;
-    return $self;
-}
+#sub bless {
+#    my $class = shift;
+#    my $self  = shift;
+#
+#    my $selfclass = blessed($self);
+#
+#    if ( defined $selfclass ) {
+#        return $self if $selfclass eq $class;
+#        croak 'Cannot re-bless existing object';
+#    }
+#
+#    CORE::bless $self, $class;
+#    return $self;
+#}
 
 ############################################
 #### Class methods - new from various files
@@ -363,7 +395,7 @@ sub last_col {
 }
 
 #########################################
-### Accessors for elements, rows and columns
+### Readers for elements, rows and columns
 
 sub element {
     my ( $class, $self ) = &$invocant_cr;
@@ -395,6 +427,110 @@ sub cols {
     my @returned = map { [ $class->col( $self, $_ ) ] } @_;
     return $class->bless( \@returned );
 }
+
+sub slice {
+    my ( $class, $self ) = &$invocant_cr;
+    my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
+
+    croak "Arguments to $class->slice must not be negative"
+      if any { $_ < 0 } ( $firstcol, $lastcol, $firstrow, $lastrow );
+
+    ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
+      if $firstrow > $lastrow;
+
+    ( $firstcol, $lastcol ) = ( $lastcol, $firstcol )
+      if $firstcol > $lastcol;
+
+    my $self_lastcol = $class->lastcol($self);
+    my $self_lastrow = $#{$self};
+
+    $lastcol = min( $lastcol, $self_lastcol );
+    $lastrow = min( $lastrow, $self_lastrow );
+
+    my $new = $class->cols( $self, $firstcol .. $lastcol )
+      ->rows( $firstrow .. $lastrow );
+
+    if ( defined wantarray ) {
+        return $new;
+    }
+
+    @{$self} = @{$new};
+
+    return;
+
+} ## tidy end: sub slice
+
+#########################################
+### Writers for elements, rows and columns
+
+sub set_element {
+    my ( $class, $self ) = &$invocant_cr;
+    my $rowidx = shift;
+    my $colidx = shift;
+    $self->[$rowidx][$colidx] = shift;
+    return;
+}
+
+sub set_row {
+    my ( $class, $self ) = &$invocant_cr;
+    my $rowidx = shift || 0;
+    my @elements = @_;
+    $self->[$rowidx] = \@elements;
+    return;
+}
+
+sub set_col {
+    my ( $class, $self ) = &$invocant_cr;
+    my $colidx   = shift;
+    my @elements = @_;
+    for my $rowidx ( 0 .. max( $self->last_row, $#elements ) ) {
+        $self->[$rowidx][$colidx] = $elements[$rowidx];
+    }
+}
+
+sub set_rows {
+    my ( $class, $self ) = &$invocant_cr;
+    my $self_start_rowidx = shift;
+    my $given             = $class->new(@_);
+    my @given_rows        = @{$given};
+    for my $given_rowidx ( 0 .. $#given_rows ) {
+        my @elements = @{ $given_rows[$given_rowidx] };
+        $self->[ $self_start_rowidx + $given_rowidx ] = \@elements;
+    }
+    return;
+}
+
+sub set_cols {
+    my ( $class, $self ) = &$invocant_cr;
+    my $self_start_colidx = shift;
+    my @given_cols        = @_;
+
+    foreach my $given_colidx ( 0 .. $#given_cols ) {
+        my @given_elements = @{ $given_cols[$given_colidx] };
+        $self->set_col( $self_start_colidx + $given_colidx, @given_elements );
+    }
+}
+
+sub set_slice {
+    my ( $class, $self ) = &$invocant_cr;
+
+    my $class_firstrow = shift;
+    my $class_firstcol = shift;
+
+    my $slice          = $class->new(@_);
+    my $slice_last_row = $slice->last_row;
+    my $slice_last_col = $slice->last_col;
+
+    for my $rowidx ( 0 .. $slice_last_row ) {
+        for my $colidx ( 0 .. $slice_last_col ) {
+            $self->[ $class_firstrow + $rowidx ][ $class_firstcol + $colidx ]
+              = $slice->[$rowidx][$colidx];
+        }
+    }
+
+    return;
+
+} ## tidy end: sub set_slice
 
 ##############################
 ### push, pop, shift, unshift
@@ -453,8 +589,8 @@ sub push_col {
 
 sub push_rows {
     my ( $class, $self ) = &$invocant_cr;
-    my @rows = @_;
-    return push @{$self}, @rows;
+    my $rows = $class->new(@_);
+    return push @{$self}, @$rows;
 }
 
 sub push_cols {
@@ -497,8 +633,8 @@ sub unshift_col {
 
 sub unshift_rows {
     my ( $class, $self ) = &$invocant_cr;
-    my @cols = @_;
-    return unshift @{$self}, @cols;
+    my $given = $class->new(@_);
+    return unshift @{$self}, @$given;
 }
 
 sub unshift_cols {
@@ -536,16 +672,16 @@ sub ins_col {
 sub ins_rows {
     my ( $class, $self ) = &$invocant_cr;
     my $row_idx = shift;
-    my @rows    = @{ +shift };
+    my $given   = $class->new(@_);
 
-    splice( @{$self}, $row_idx, 0, @rows );
+    splice( @{$self}, $row_idx, 0, @$given );
     return scalar @{$self};
 }
 
 sub ins_cols {
     my ( $class, $self ) = &$invocant_cr;
     my $col_idx = shift;
-    my @cols    = @{ +shift };
+    my @cols    = @_;
 
     my $last_row = max( $class->last_row($self), map { $#{$_} } @cols );
 
@@ -631,36 +767,6 @@ sub del_cols {
 ##################################################
 ### Mutators. Modify object in void context; returns new object otherwise
 
-sub slice {
-    my ( $class, $self ) = &$invocant_cr;
-    my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
-
-    croak "Arguments to $class->slice must not be negative"
-      if any { $_ < 0 } ( $firstcol, $lastcol, $firstrow, $lastrow );
-
-    ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
-      if $firstrow > $lastrow;
-
-    ( $firstcol, $lastcol ) = ( $lastcol, $firstcol )
-      if $firstcol > $lastcol;
-
-    my $self_lastcol = $class->lastcol($self);
-    my $self_lastrow = $#{$self};
-
-    $lastcol = min( $lastcol, $self_lastcol );
-    $lastrow = min( $lastrow, $self_lastrow );
-
-    my $new = $class->cols( $self, $firstcol .. $lastcol )
-      ->rows( $firstrow .. $lastrow );
-
-    if ( defined wantarray ) {
-        return $new;
-    }
-
-    @{$self} = @{$new};
-
-} ## tidy end: sub slice
-
 sub transpose {
     my ( $class, $self ) = &$invocant_cr;
 
@@ -719,14 +825,16 @@ sub prune_callback {
 
     # if it's all blank, make it an empty AoA and return it
     unless ( @{$self} ) {
+        if ( defined wantarray ) {
+            return $class->new();
+        }
         @{$self} = ( [] );
         return $self;
     }
 
     # remove final blank columns
 
-    # does not use the last_col method because that method calls this one
-    my $last_col = max( map { $#{$_} } @{$self} );
+    my $last_col = $class->last_col($self);
 
     while ( $last_col > -1
         and all { $callback->() } $class->col( $self, $last_col ) )
@@ -1042,7 +1150,8 @@ sub xlsx {
     require Excel::Writer::XLSX;    ### DEP ###
 
     my $workbook = Excel::Writer::XLSX->new($output_file);
-    croak "Can't open $output_file for writing: $!" unless defined $workbook;
+    croak "Can't open $output_file for writing: $!"
+      unless defined $workbook;
     my $sheet = $workbook->add_worksheet();
     my @format;
 
@@ -1091,18 +1200,18 @@ This documentation refers to version 0.001_001
  my $array2d = Array::2D->new( [ qw/a b c/ ] , [ qw/w x y/ ] );
 
  # $array2d contains
- 
+
  #     a  b  c
  #     w  x  y
- 
+
  $array2d->push_col (qw/d z/);
 
  #     a  b  c  d
  #     w  x  y  z
- 
+
  say $array2d->[0][1];
  # prints "b"
- 
+
 =head1 DESCRIPTION
 
 Array::2D is a module that adds useful methods to Perl's
@@ -1129,7 +1238,8 @@ access, for example, a single column, or a two-dimensional slice,
 without writing lots of extra code.
 
 Array::2D uses "row" for the first dimension, and "column" or
-"col"  for the second dimension.
+"col"  for the second dimension. This does mean that the order
+of (row, column) is the opposite of the usual (x,y) algebraic order.
 
 Because this object is just an array of arrays, most of the methods
 referring  to rows are here mainly for completeness, and aren't really
@@ -1168,9 +1278,9 @@ return values is ommitted in void context.
 
 =over
 
-=item B<new( I<row_ref>, I<row_ref>...)>
+=item B<new( I<row_ref, row_ref...>)>
 
-=item B<new( I<aoa_ref>)>
+=item B<new( I<aoa_ref> )>
 
 Returns a new Array::2D object.  It accepts a list of array 
 references as arguments, which become the rows of the object.
@@ -1178,34 +1288,36 @@ references as arguments, which become the rows of the object.
 If it receives only one argument, and that argument is an array of
 arrays -- that is, a reference to an unblessed array, and in turn
 that array only contains references to unblessed arrays -- then the
-existing AoA structure is blessed into Array::2D. If you don't want it
-to bless the existing AoA structure, use C<clone>. 
+arrayrefs contained in that structure are made into the rows of a new
+Array::2D object.
+
+If you want it to bless an existing arrayref-of-arrayrefs, use
+C<bless()>.  If you don't want to reuse the existing arrayrefs as
+the rows inside the object, use C<clone()>.
 
 If you think it's possible that the detect-an-AoA-structure could
 give a false positive (you want a new object that might have only one row,
 where each entry in that row is an reference to an unblessed array),
 use C<Array::2D->bless ( [ @your_rows ] )>.
 
+=item B<bless(I<row_ref, row_ref...>)>
+
 =item B<bless(I<aoa_ref>)>
 
-Takes an existing array of arrays and makes it into an 
-Array::2D object. Returns the object.
+Just like new(), except that if passed a single arrayref which contains
+only other arrayrefs, it will bless the outer arrayref and return it. 
+This saves the time and memory needed to copy the rows.
 
 Note that this blesses the original array, so any other references to
 this data structure will become a reference to the object, too.
 
-If the array of arrays is already an Array::2D object, it will do
-nothing but return it. If it's some other kind of object,
-it will throw an exception, as Perl doesn't allow the re-blessing of
-objects into other classes.
-
-=item B<new_across($chunksize, I<element>, I<element>, ...)>
+=item B<new_across(I<chunksize, element, element, ...>)>
 
 Takes a flat list and returns it as an Array::2D object, 
 where each row has the number of elements specified. So, for example,
 
  Array::2D->new_across (3, qw/a b c d e f g h i j/)
- 
+
 returns
 
   [ 
@@ -1214,15 +1326,15 @@ returns
     [ g, h, i] ,
     [ j ],
   ]
-  
-=item B<new_down($chunksize, I<element>, I<element>, ...)>
+
+=item B<new_down(I<chunksize, element, element, ...>)>
 
 Takes a flat list and returns it as an Array::2D object, 
 where each column has the number of elements specified. So, for
 example,
 
  Array::2D->new_down (3, qw/a b c d e f g h i j/)
- 
+
 returns
 
   [ 
@@ -1230,7 +1342,7 @@ returns
     [ b, e, h ] ,
     [ c, f, i ] ,
   ]
-  
+
 =item B<new_to_term_width (...)>
 
 A combination of I<new_down> and I<tabulate_equal_width>.  Takes three named
@@ -1239,7 +1351,7 @@ arguments:
 =over
 
 =item array => I<arrayref>
- 
+
 A one-dimensional list of scalars.
 
 =item separator => I<separator>
@@ -1265,12 +1377,12 @@ All class/object methods can be called as an object method on a blessed
 Array::2D object:
 
   $self->clone();
-  
+
 Or as a class method, if one supplies the array of arrays as the first
 argument:
 
   Array::2D->clone($self);
-  
+
 In the latter case, the array of arrays need not be blessed.
 
 =over
@@ -1305,7 +1417,7 @@ that arrayref was not blessed in the first place). So:
 
  $unblessed->[0] = [ 'Up in the corner ' , 'Yup']; 
     # does not modify original object
- 
+
 This can be confusing, so it's best to avoid modifying the result of
 C<unblessed>. Use C<clone_unblessed> instead.
 
@@ -1329,7 +1441,7 @@ If multiple strings are provided, they will be considered additional
 lines. So, one can pass the contents of an entire TSV file, the series
 of lines in the TSV file, or a combination of two.
 
-=item B<<< new_from_xlsx(I<xlsx_filespec>, I<sheet_requested>) >>>
+=item B<<< new_from_xlsx(I<xlsx_filespec, sheet_requested>) >>>
 
 Returns a new object from a worksheet in an Excel XLSX file, consisting
 of the rows and columns of that sheet. The I<sheet_requested> parameter
@@ -1391,6 +1503,60 @@ specified rows.
 
 Returns a new Array::2D object with all the rows of the specified columns.
 
+=item B<slice(I<firstcol_idx, lastcol_idx, firstrow_idx, lastrow_idx>)>
+
+Takes a two-dimensional slice of the object; like cutting a rectangle
+out of the object.
+
+In void context, alters the original object, which then will contain
+only the area specified; otherwise, creates a new Array::2D 
+object and returns the object.
+
+=item B<set_element(I<row_idx, col_idx, value>)>
+
+Sets the element in the given row and column to the given value. 
+Just a slower way of saying 
+C<< $array2d->[I<row_idx>][I<col_idx>] = I<value> >>.
+
+=item B<set_row(I<row_idx , value, value...>)>
+
+Sets the given row to the given set of values.
+A slower way of saying  C<< {$array2d->[I<row_idx>] = [ @values ] >>.
+
+=item B<set_col(I<col_idx, value, value...>)>
+
+Sets the given column to the given set of values.  If more values are given than
+there are rows, will add rows; if fewer values than there are rows, will set the 
+entries in the remaining rows to C<undef>.
+
+=item B<< set_rows(I<start_row_idx, array_of_arrays>) >>
+
+=item B<< set_rows(I<start_row_idx, row_ref, row_ref ...>) >>
+
+Sets the rows starting at the given start row index to the rows given.
+So, for example, $obj->set_rows(1, $row_ref_a, $row_ref_b) will set 
+row 1 of the object to be the elements of $row_ref_a and row 2 to be the 
+elements of $row_ref_b.
+
+The arguments after I<start_row_idx> are passed to C<new()>, so it accepts
+any of the arguments that C<new()> accepts.
+
+=item B<set_cols(I<start_col_idx, col_ref, col_ref>...)>
+
+Sets the columns starting at the given start column index to the columns given.
+So, for example, $obj->set_cols(1, $col_ref_a, $col_ref_b) will set 
+column 1 of the object to be the elemnents of $col_ref_a and column 2 to be the
+elements of $col_ref_b.
+
+=item B<set_slice(I<first_row, first_col, array_of_arrays>)>
+
+=item B<set_slice(I<first_row, first_col, row_ref, row_ref...>)>
+
+Sets a rectangular segment of the object to have the values of the supplied
+rows or array of arrays, beginning at the supplied first row and first column.
+The arguments after the row and columns are passed to C<new()>, so it accepts
+any of the arguments that C<new()> accepts.
+
 =item B<shift_row()>
 
 Removes the first row of the object and returns a list  of the elements
@@ -1423,10 +1589,15 @@ number of columns.
 
 =item B<push_rows(I<aoa_ref>)>
 
+=item B<push_rows(I<row_ref, row_ref...>)>
+
 Takes the specified array of arrays and adds them as new rows after the
 end of the existing rows. Returns the new number of rows.
 
-=item B<push_cols(I<aoa_ref>)>
+The arguments are passed to C<new()>, so it accepts
+any of the arguments that C<new()> accepts.
+
+=item B<push_cols(I<col_ref, col_ref...>)>
 
 Takes the specified array of arrays and adds them as new columns, after
 the end of the existing columns. Returns the new number of columns.
@@ -1443,10 +1614,15 @@ number of columns.
 
 =item B<unshift_rows(I<aoa_ref>)>
 
+=item B<unshift_rows(I<row_ref, row_ref...>)>
+
 Takes the specified array of arrays and adds them as new rows before
 the beginning of the existing rows. Returns the new number of rows.
 
-=item B<unshift_cols(I<aoa_ref>)>
+The arguments are passed to C<new()>, so it accepts
+any of the arguments that C<new()> accepts.
+
+=item B<unshift_cols(I<col_ref, col_ref...>)>
 
 Takes the specified array of arrays and adds them as new columns,
 before the beginning of the existing columns. Returns the new number of
@@ -1467,7 +1643,10 @@ the new number of columns.
 Takes the specified array of arrays and inserts them as new rows at the
 given index.  Returns the new number of rows.
 
-=item B<ins_cols(I<col_idx, element, element...>)>
+The arguments after the row index are passed to C<new()>, so it accepts
+any of the arguments that C<new()> accepts.
+
+=item B<ins_cols(I<col_idx, col_ref, col_ref...>)>
 
 Takes the specified array of arrays and inserts them as new columns at
 the given index.  Returns the new number of columns.
@@ -1492,14 +1671,7 @@ Array::2D object of those rows.
 Removes the columns of the object specified by the indices. Returns an
 Array::2D object of those columns.
 
-=item B<slice(I<firstcol_idx>, I<lastcol_idx>, I<firstrow_idx>, I<lastrow_idx>)>
 
-Takes a two-dimensional slice of the object; like cutting a rectangle
-out of the object.
-
-In void context, alters the original object, which then will contain
-only the area specified; otherwise, creates a new Array::2D 
-object and returns the object.
 
 =item B<transpose()>
 
@@ -1517,19 +1689,19 @@ that are entirely undefined. For example:
  my $obj = Array::2D->new ( [ qw/a b c/]  , [ qw/f g h/ ]);
  $obj->[0][4] = 'e';
  $obj->[3][0] = 'k';
- 
+
  # a b c undef e
  # f g h
  # (empty)
  # k
- 
+
  $obj->pop_row();
  $obj->pop_col();
- 
+
  # a b c undef
  # f g h
  # (empty)
-  
+
 That would yield an object with four columns, but in which the last
 column  and last row (each with index 3) consists of only undefined
 values.
@@ -1577,7 +1749,7 @@ For example, this would lowercase every element in the array (assuming
 all values are defined):
 
  $obj->apply(sub {lc});
- 
+
 If an entry in the array is undefined, it will still be passed to the
 callback.
 
@@ -1634,7 +1806,7 @@ So:
  $obj = Array::2D->new([qw/a 1 2/],[qw/b 3 4/]);
  $hashref = $obj->hash_of_row_elements(0, 1);
  # $hashref = { a => '1' , b => '3' }
- 
+
 If neither key column nor value column are specified, column 0 will be
 used for the key and the column 1 will be used for the value.
 
@@ -1657,7 +1829,7 @@ So, for example,
 
  $obj = Array::2D->new([qw/a bbb cc/],[qw/dddd e f/]);
  $arrayref = $obj->tabulate();
- 
+
  # $arrayref = [ 'a    bbb cc' ,
                  'dddd e   f'] ;
 
@@ -1766,14 +1938,10 @@ element of the data, but frequently these are stored separately.
 
 =over
 
-=item Arguments to Array::2D->new must be arrayrefs (rows)
+=item Arguments to Array::2D->new or Array::2D->blessed must be unblessed arrayrefs (rows)
 
-A non-arrayref was passed to the new constructor.
-
-=item Cannot re-bless existing object
-
-An object of another class was passed to the bless() method. Only pass
-unblessed (non-object) data structures to bless().
+A non-arrayref, or blessed object (other than an Array::2D object), was 
+passed to the new constructor.
 
 =item Arguments to Array::2D->slice must not be negative
 

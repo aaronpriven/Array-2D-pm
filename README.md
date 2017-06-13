@@ -12,18 +12,17 @@ This documentation refers to version 0.001\_001
     my $array2d = Array::2D->new( [ qw/a b c/ ] , [ qw/w x y/ ] );
 
     # $array2d contains
-    
+
     #     a  b  c
     #     w  x  y
-    
+
     $array2d->push_col (qw/d z/);
 
     #     a  b  c  d
     #     w  x  y  z
-    
+
     say $array2d->[0][1];
     # prints "b"
-    
 
 # DESCRIPTION
 
@@ -51,7 +50,8 @@ access, for example, a single column, or a two-dimensional slice,
 without writing lots of extra code.
 
 Array::2D uses "row" for the first dimension, and "column" or
-"col"  for the second dimension.
+"col"  for the second dimension. This does mean that the order
+of (row, column) is the opposite of the usual (x,y) algebraic order.
 
 Because this object is just an array of arrays, most of the methods
 referring  to rows are here mainly for completeness, and aren't really
@@ -77,8 +77,8 @@ return values is ommitted in void context.
 
 ## CLASS METHODS
 
-- **new( _row\_ref_, _row\_ref_...)**
-- **new( _aoa\_ref_)**
+- **new( _row\_ref, row\_ref..._)**
+- **new( _aoa\_ref_ )**
 
     Returns a new Array::2D object.  It accepts a list of array 
     references as arguments, which become the rows of the object.
@@ -86,34 +86,34 @@ return values is ommitted in void context.
     If it receives only one argument, and that argument is an array of
     arrays -- that is, a reference to an unblessed array, and in turn
     that array only contains references to unblessed arrays -- then the
-    existing AoA structure is blessed into Array::2D. If you don't want it
-    to bless the existing AoA structure, use `clone`. 
+    arrayrefs contained in that structure are made into the rows of a new
+    Array::2D object.
+
+    If you want it to bless an existing arrayref-of-arrayrefs, use
+    `bless()`.  If you don't want to reuse the existing arrayrefs as
+    the rows inside the object, use `clone()`.
 
     If you think it's possible that the detect-an-AoA-structure could
     give a false positive (you want a new object that might have only one row,
     where each entry in that row is an reference to an unblessed array),
     use `Array::2D-`bless ( \[ @your\_rows \] )>.
 
+- **bless(_row\_ref, row\_ref..._)**
 - **bless(_aoa\_ref_)**
 
-    Takes an existing array of arrays and makes it into an 
-    Array::2D object. Returns the object.
+    Just like new(), except that if passed a single arrayref which contains
+    only other arrayrefs, it will bless the outer arrayref and return it. 
+    This saves the time and memory needed to copy the rows.
 
     Note that this blesses the original array, so any other references to
     this data structure will become a reference to the object, too.
 
-    If the array of arrays is already an Array::2D object, it will do
-    nothing but return it. If it's some other kind of object,
-    it will throw an exception, as Perl doesn't allow the re-blessing of
-    objects into other classes.
-
-- **new\_across($chunksize, _element_, _element_, ...)**
+- **new\_across(_chunksize, element, element, ..._)**
 
     Takes a flat list and returns it as an Array::2D object, 
     where each row has the number of elements specified. So, for example,
 
         Array::2D->new_across (3, qw/a b c d e f g h i j/)
-        
 
     returns
 
@@ -123,16 +123,14 @@ return values is ommitted in void context.
           [ g, h, i] ,
           [ j ],
         ]
-        
 
-- **new\_down($chunksize, _element_, _element_, ...)**
+- **new\_down(_chunksize, element, element, ..._)**
 
     Takes a flat list and returns it as an Array::2D object, 
     where each column has the number of elements specified. So, for
     example,
 
         Array::2D->new_down (3, qw/a b c d e f g h i j/)
-        
 
     returns
 
@@ -141,7 +139,6 @@ return values is ommitted in void context.
           [ b, e, h ] ,
           [ c, f, i ] ,
         ]
-        
 
 - **new\_to\_term\_width (...)**
 
@@ -171,13 +168,11 @@ All class/object methods can be called as an object method on a blessed
 Array::2D object:
 
     $self->clone();
-    
 
 Or as a class method, if one supplies the array of arrays as the first
 argument:
 
     Array::2D->clone($self);
-    
 
 In the latter case, the array of arrays need not be blessed.
 
@@ -190,8 +185,10 @@ In the latter case, the array of arrays need not be blessed.
 
 - **unblessed()**
 
-    Returns a new, unblessed array, containing the same rows as the 2D
-    array object.
+    Returns an unblessed array containing the same rows as the 2D
+    array object. If called as a class method and given an argument that is
+    already unblessed, will return the argument. Otherwise will create
+    a new, unblessed array.
 
     This is usually pointless, as Perl lets you ignore the object-ness of
     any object and access the data inside, but sometimes certain modules
@@ -199,7 +196,8 @@ In the latter case, the array of arrays need not be blessed.
     around that.
 
     Note that while modifying the elements inside the rows will modify the 
-    original 2D array, modifying the outer arrayref will not. So:
+    original 2D array, modifying the outer arrayref will not (unless
+    that arrayref was not blessed in the first place). So:
 
         my $unblessed = $array2d->unblessed;
 
@@ -208,10 +206,9 @@ In the latter case, the array of arrays need not be blessed.
 
         $unblessed->[0] = [ 'Up in the corner ' , 'Yup']; 
            # does not modify original object
-        
 
     This can be confusing, so it's best to avoid modifying the result of
-    `unblessed`.
+    `unblessed`. Use `clone_unblessed` instead.
 
 - **clone\_unblessed()**
 
@@ -220,7 +217,7 @@ In the latter case, the array of arrays need not be blessed.
 
     The array of arrays will be different, but if any of the elements of
     the  2D array are themselves references, they will refer to the same
-    things  as in the original 2D array.
+    things as in the original 2D array.
 
 - **new\_from\_tsv(_tsv\_string, tsv\_string..._)**
 
@@ -233,7 +230,7 @@ In the latter case, the array of arrays need not be blessed.
     lines. So, one can pass the contents of an entire TSV file, the series
     of lines in the TSV file, or a combination of two.
 
-- **new\_from\_xlsx(_xlsx\_filespec_, _sheet\_requested_)**
+- **new\_from\_xlsx(_xlsx\_filespec, sheet\_requested_)**
 
     Returns a new object from a worksheet in an Excel XLSX file, consisting
     of the rows and columns of that sheet. The _sheet\_requested_ parameter
@@ -294,6 +291,58 @@ In the latter case, the array of arrays need not be blessed.
 
     Returns a new Array::2D object with all the rows of the specified columns.
 
+- **slice(_firstcol\_idx, lastcol\_idx, firstrow\_idx, lastrow\_idx_)**
+
+    Takes a two-dimensional slice of the object; like cutting a rectangle
+    out of the object.
+
+    In void context, alters the original object, which then will contain
+    only the area specified; otherwise, creates a new Array::2D 
+    object and returns the object.
+
+- **set\_element(_row\_idx, col\_idx, value_)**
+
+    Sets the element in the given row and column to the given value. 
+    Just a slower way of saying 
+    `$array2d->[_row_idx_][_col_idx_] = _value_`.
+
+- **set\_row(_row\_idx , value, value..._)**
+
+    Sets the given row to the given set of values.
+    A slower way of saying  `{$array2d->[_row_idx_] = [ @values ]`.
+
+- **set\_col(_col\_idx, value, value..._)**
+
+    Sets the given column to the given set of values.  If more values are given than
+    there are rows, will add rows; if fewer values than there are rows, will set the 
+    entries in the remaining rows to `undef`.
+
+- **set\_rows(_start\_row\_idx, array\_of\_arrays_)**
+- **set\_rows(_start\_row\_idx, row\_ref, row\_ref ..._)**
+
+    Sets the rows starting at the given start row index to the rows given.
+    So, for example, $obj->set\_rows(1, $row\_ref\_a, $row\_ref\_b) will set 
+    row 1 of the object to be the elements of $row\_ref\_a and row 2 to be the 
+    elements of $row\_ref\_b.
+
+    The arguments after _start\_row\_idx_ are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
+- **set\_cols(_start\_col\_idx, col\_ref, col\_ref_...)**
+
+    Sets the columns starting at the given start column index to the columns given.
+    So, for example, $obj->set\_cols(1, $col\_ref\_a, $col\_ref\_b) will set 
+    column 1 of the object to be the elemnents of $col\_ref\_a and column 2 to be the
+    elements of $col\_ref\_b.
+
+- **set\_slice(_first\_row, first\_col, array\_of\_arrays_)**
+- **set\_slice(_first\_row, first\_col, row\_ref, row\_ref..._)**
+
+    Sets a rectangular segment of the object to have the values of the supplied
+    rows or array of arrays, beginning at the supplied first row and first column.
+    The arguments after the row and columns are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
 - **shift\_row()**
 
     Removes the first row of the object and returns a list  of the elements
@@ -325,11 +374,15 @@ In the latter case, the array of arrays need not be blessed.
     number of columns.
 
 - **push\_rows(_aoa\_ref_)**
+- **push\_rows(_row\_ref, row\_ref..._)**
 
     Takes the specified array of arrays and adds them as new rows after the
     end of the existing rows. Returns the new number of rows.
 
-- **push\_cols(_aoa\_ref_)**
+    The arguments are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
+- **push\_cols(_col\_ref, col\_ref..._)**
 
     Takes the specified array of arrays and adds them as new columns, after
     the end of the existing columns. Returns the new number of columns.
@@ -345,11 +398,15 @@ In the latter case, the array of arrays need not be blessed.
     number of columns.
 
 - **unshift\_rows(_aoa\_ref_)**
+- **unshift\_rows(_row\_ref, row\_ref..._)**
 
     Takes the specified array of arrays and adds them as new rows before
     the beginning of the existing rows. Returns the new number of rows.
 
-- **unshift\_cols(_aoa\_ref_)**
+    The arguments are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
+- **unshift\_cols(_col\_ref, col\_ref..._)**
 
     Takes the specified array of arrays and adds them as new columns,
     before the beginning of the existing columns. Returns the new number of
@@ -370,7 +427,10 @@ In the latter case, the array of arrays need not be blessed.
     Takes the specified array of arrays and inserts them as new rows at the
     given index.  Returns the new number of rows.
 
-- **ins\_cols(_col\_idx, element, element..._)**
+    The arguments after the row index are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
+- **ins\_cols(_col\_idx, col\_ref, col\_ref..._)**
 
     Takes the specified array of arrays and inserts them as new columns at
     the given index.  Returns the new number of columns.
@@ -395,15 +455,6 @@ In the latter case, the array of arrays need not be blessed.
     Removes the columns of the object specified by the indices. Returns an
     Array::2D object of those columns.
 
-- **slice(_firstcol\_idx_, _lastcol\_idx_, _firstrow\_idx_, _lastrow\_idx_)**
-
-    Takes a two-dimensional slice of the object; like cutting a rectangle
-    out of the object.
-
-    In void context, alters the original object, which then will contain
-    only the area specified; otherwise, creates a new Array::2D 
-    object and returns the object.
-
 - **transpose()**
 
     Transposes the object: the elements that used to be in rows are now in
@@ -420,19 +471,18 @@ In the latter case, the array of arrays need not be blessed.
         my $obj = Array::2D->new ( [ qw/a b c/]  , [ qw/f g h/ ]);
         $obj->[0][4] = 'e';
         $obj->[3][0] = 'k';
-        
+
         # a b c undef e
         # f g h
         # (empty)
         # k
-        
+
         $obj->pop_row();
         $obj->pop_col();
-        
+
         # a b c undef
         # f g h
         # (empty)
-         
 
     That would yield an object with four columns, but in which the last
     column  and last row (each with index 3) consists of only undefined
@@ -481,7 +531,6 @@ In the latter case, the array of arrays need not be blessed.
     all values are defined):
 
         $obj->apply(sub {lc});
-        
 
     If an entry in the array is undefined, it will still be passed to the
     callback.
@@ -539,7 +588,6 @@ In the latter case, the array of arrays need not be blessed.
         $obj = Array::2D->new([qw/a 1 2/],[qw/b 3 4/]);
         $hashref = $obj->hash_of_row_elements(0, 1);
         # $hashref = { a => '1' , b => '3' }
-        
 
     If neither key column nor value column are specified, column 0 will be
     used for the key and the column 1 will be used for the value.
@@ -563,7 +611,7 @@ In the latter case, the array of arrays need not be blessed.
 
         $obj = Array::2D->new([qw/a bbb cc/],[qw/dddd e f/]);
         $arrayref = $obj->tabulate();
-        
+
         # $arrayref = [ 'a    bbb cc' ,
                         'dddd e   f'] ;
 
@@ -660,14 +708,10 @@ In the latter case, the array of arrays need not be blessed.
 
 ## ERRORS
 
-- Arguments to Array::2D->new must be arrayrefs (rows)
+- Arguments to Array::2D->new or Array::2D->blessed must be unblessed arrayrefs (rows)
 
-    A non-arrayref was passed to the new constructor.
-
-- Cannot re-bless existing object
-
-    An object of another class was passed to the bless() method. Only pass
-    unblessed (non-object) data structures to bless().
+    A non-arrayref, or blessed object (other than an Array::2D object), was 
+    passed to the new constructor.
 
 - Arguments to Array::2D->slice must not be negative
 
