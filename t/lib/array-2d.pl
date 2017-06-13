@@ -69,8 +69,8 @@ our $one_col_obj = Array::2D->new(
 # $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref used for
 # testing push, insert, etc.
 
-our $empty_ref = [ [] ];
-our $empty_obj = Array::2D->new();
+our $empty_ref = [];
+our $empty_obj = Array::2D->empty();
 
 use Scalar::Util('blessed');
 
@@ -87,5 +87,5 @@ sub isnt_blessed {
 }
 
 sub a2dcan {
-    can_ok('Array::2D', @_);
+    can_ok( 'Array::2D', @_ );
 }

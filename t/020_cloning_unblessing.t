@@ -92,4 +92,3 @@ sub all_row_refs_are_different {
     }
     return 1;
 }
-

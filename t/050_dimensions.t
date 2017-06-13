@@ -35,8 +35,10 @@ foreach my $subject_r (@subjects) {
         ok( Array::2D->is_empty($ref), "is_empty true: empty reference" );
     }
     else {
-        ok( not ($obj->is_empty()),          "is_empty false: $name object" );
-        ok( not (Array::2D->is_empty($ref)), "is_empty false: $name reference" );
+        ok( not( $obj->is_empty() ), "is_empty false: $name object" );
+        ok( not( Array::2D->is_empty($ref) ),
+            "is_empty false: $name reference"
+        );
     }
 }
 
@@ -50,7 +52,8 @@ foreach my $method_idx ( 0 .. $#methods ) {
         my ( $name, $obj, $ref, @values ) = @{$subject_r};
         my $value = $values[$method_idx];
 
-        cmp_ok( $obj->$method, '==', $value, "$method() on $name object" );
+        cmp_ok( $obj->$method, '==', $value, "$method() on $name object" )
+          ;
         cmp_ok( Array::2D->$method($ref),
             '==', $value, "$method() on $name reference" );
     }

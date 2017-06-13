@@ -33,7 +33,7 @@ note 'Testing ->empty()';
 can_ok( 'Array::2D', 'empty' );
 
 my $empty_obj_from_empty = Array::2D->empty();
-is_deeply( $empty_obj_from_empty, [ [] ], "empty(): New empty object created" );
+is_deeply( $empty_obj_from_empty, [], "empty(): New empty object created" );
 is_blessed( $empty_obj_from_empty, "empty(): new empty object" );
 
 ########################
@@ -48,7 +48,7 @@ for my $method (qw/new bless/) {
     # EMPTY
 
     my $empty_obj = Array::2D->$method();
-    is_deeply( $empty_obj, [ [] ], "$method(): New empty object created" );
+    is_deeply( $empty_obj, [], "$method(): New empty object created" );
     is_blessed( $empty_obj, "$method(): new empty object" );
 
     # FROM ARRAY
@@ -98,7 +98,7 @@ for my $method (qw/new bless/) {
     is_blessed( $one_row_obj,
         "$method(): Object created from reference with one row" );
 
-    # this is done in the loop only to get the "note" text 
+    # this is done in the loop only to get the "note" text
     # in the right place
     if ( $method eq 'new' ) {
 
@@ -144,7 +144,7 @@ for my $method (qw/new bless/) {
 
     } ## tidy end: else [ if ( $method eq 'new' )]
 
-}
+} ## tidy end: for my $method (qw/new bless/)
 
 #################
 # ->new_across()
@@ -167,7 +167,8 @@ is_blessed( $across_2d, "Object created via new_across()" );
 
 can_ok( 'Array::2D', 'new_down' );
 
-my @down_flat = ( 'a', 'b', 'c', '1', '2', '3', 'X', 'Y', 'Z', -1, -2, -3 );
+my @down_flat
+  = ( 'a', 'b', 'c', '1', '2', '3', 'X', 'Y', 'Z', -1, -2, -3 );
 my $down_2d = Array::2D->new_down( 3, @down_flat );
 
 is_deeply( $down_2d, $across_and_down_test, 'new_down() creates object' );
