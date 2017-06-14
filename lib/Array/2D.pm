@@ -413,9 +413,12 @@ sub row {
 
 sub col {
     my ( $class, $self ) = &$invocant_cr;
-    return if $class->is_empty($self);
+    return () if $class->is_empty($self);
     my $colidx = shift || 0;
-    my @col = map { $#{$_} <= $colidx ? $_->[$colidx] : undef } @{$self};
+    if ( $colidx < 0 ) {
+        $colidx = $colidx + $class->last_col($self) + 1;
+    }
+    my @col = map { $colidx <= $#{$_} ? $_->[$colidx] : undef } @{$self};
     # the element if it's not less than the highest column of that row,
     # otherwise undef
     pop @col while @col and not defined $col[-1];
@@ -450,38 +453,56 @@ sub slice {
 
     my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
 
-    croak "Arguments to $class->slice must not be negative"
-      if any { $_ < 0 } ( $firstcol, $lastcol, $firstrow, $lastrow );
-
     ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
       if $lastrow < $firstrow;
 
-    my $self_lastrow = $#{$self};
+    my $self_lastrow = $class->last_row($self);
 
-    if ( $self_lastrow < $firstrow ) {
+    foreach my $row ( $firstrow, $lastrow ) {
+        next unless $row < 0;
+        $row += $class->height($self);
+    }
+
+    # if it's specifying an area entirely off the beginning or end
+    # of the array, return empty
+    if ( $lastrow < 0 or $self_lastrow < $firstrow ) {
         return $class->empty() if defined wantarray;
         @{$self} = ();
         return;
     }
 
+    # otherwise, if it's at least partially in the array, set the bounds
+    # to be within the array.
+    $lastrow  = $self_lastrow if $self_lastrow < $lastrow;
+    $firstrow = 0             if $firstrow < 0;
+
     my $rows = $class->rows( $self, $firstrow .. $lastrow );
+
+    # if negative, get the column from the end (of original, not of these rows)
+    foreach my $col ( $firstcol, $lastcol ) {
+        next unless $col < 0;
+        $col += $class->width($self);
+    }
 
     ( $firstcol, $lastcol ) = ( $lastcol, $firstcol )
       if $lastcol < $firstcol;
 
-    my $rows_lastcol = $rows->lastcol($self);
-
-    if ( $rows_lastcol < $firstcol ) {
+    # if it's specifying an area entirely off the beginning or end
+    # of the array, return empty
+    if ( $lastcol < 0 or $self_lastrow < $firstrow ) {
         return $class->empty() if defined wantarray;
         @{$self} = ();
         return;
     }
 
+    # otherwise, if it's at least partially in the array, set the bounds
+    # to be within the rows.
+    $firstcol = 0 if $firstcol < 0;
+    my $rows_lastcol = $class->last_col($rows);
     $lastcol = $rows_lastcol if $rows_lastcol < $lastcol;
 
     my $new = $class->cols( $rows, $firstcol .. $lastcol );
     return $new if defined wantarray;
-
     @{$self} = @{$new};
     return;
 
@@ -2000,11 +2021,6 @@ element of the data, but frequently these are stored separately.
 
 A non-arrayref, or blessed object (other than an Array::2D object), was 
 passed to the new constructor.
-
-=item Arguments to Array::2D->slice must not be negative
-
-A negative row or column index was provided. This routine does not
-handle that.
 
 =item Sheet $sheet_requested not found in $xlsx in Array::2D->new_from_xlsx
 
