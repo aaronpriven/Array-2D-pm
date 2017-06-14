@@ -131,6 +131,31 @@ for my $test_r (@col_tests) {
 note 'Testing rows()';
 ok( Array::2D->can('rows'), 'Can rows()' );
 
+my @rows_tests = (
+    [   [ 0, 1 ],
+        [   [ 'Joshua',      29, 'San Mateo',     undef, 'Hannah' ],
+            [ 'Christopher', 59, 'New York City', undef, 'Alexis' ],
+        ],
+        "first two rows"
+    ]
+);
+
+for my $test_r (@rows_tests) {
+    my ( $indices_r, $test_against, $description ) = @$test_r;
+
+    is_deeply( [ $sample_obj->rows(@$indices_r) ],
+        $test_against, "Fetched $description: sample object" );
+    is_deeply( $sample_obj, $sample_test,
+        '... and it did not alter the object' );
+    is_deeply( [ Array::2D->rows( $sample_ref, @$indices_r ) ],
+        $test_against, "Fetched $description: sample reference" );
+    is_deeply(
+        $sample_ref, $sample_test,
+        '... and it did not alter the reference'
+    );
+
+}
+
 note 'Testing cols()';
 ok( Array::2D->can('cols'), 'Can cols()' );
 
