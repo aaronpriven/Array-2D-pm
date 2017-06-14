@@ -6,13 +6,14 @@ BEGIN {
       // die "Can't load array-2d.pl";
 }
 
-our ( $sample_obj, $sample_ref, $sample_test );
+our ( $sample_obj,            $sample_ref,            $sample_test );
+our ( $sample_transposed_obj, $sample_transposed_ref, $sample_transposed_test );
 our ( $empty_obj, $empty_ref );
 
 #our ( $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref );
 
 note 'Testing element()';
-ok( Array::2D->can('element'), 'Can element()' );
+a2dcan('element');
 
 my @element_tests = (
     [ 0,  0,  'Fetched top left element',                'Joshua' ],
@@ -25,6 +26,8 @@ my @element_tests = (
     [ 3,  4,  'Fetched an empty element' ],
     [ 12, 2,  'Fetched element from nonexistent row' ],
     [ 2,  6,  'Fetched element from nonexistent column' ],
+    [ -20, 0,  'Fetched element from nonexistent negative row' ],
+    [ 0,   -9, 'Fetched element from nonexistent negative column' ],
 );
 
 for my $test_r (@element_tests) {
@@ -48,7 +51,7 @@ is( Array::2D->element( $empty_ref, 1, 1 ),
 is_deeply( $empty_ref, [], '... and it did not alter the reference' );
 
 note 'Testing row()';
-ok( Array::2D->can('row'), 'Can row()' );
+a2dcan('row');
 
 my @row_tests = (
     [   0,
@@ -65,7 +68,8 @@ my @row_tests = (
         [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
         'row with negative index'
     ],
-    [ 10, [], 'nonexistent row' ],
+    [ 10,  [], 'nonexistent row' ],
+    [ -20, [], 'nonexistent negative row' ],
 );
 
 # row returns a list, so we have to create anonymous arrayref to test
@@ -82,7 +86,7 @@ for my $test_r (@row_tests) {
 }
 
 note 'Testing col()';
-ok( Array::2D->can('col'), 'Can col()' );
+a2dcan('col');
 
 my @col_tests = (
     [   0,
@@ -111,7 +115,8 @@ my @col_tests = (
         ],
         'column with negative index',
     ],
-    [ 6, [], 'nonexistent column' ],
+    [ 6,  [], 'nonexistent column' ],
+    [ -9, [], 'nonexistent negative column' ],
 );
 
 # col returns a list, so we have to create anonymous arrayref to test
@@ -128,38 +133,109 @@ for my $test_r (@col_tests) {
         '... and it did not alter the reference' );
 }
 
-note 'Testing rows()';
-ok( Array::2D->can('rows'), 'Can rows()' );
+note 'Testing rows() and cols()';
+a2dcan('rows');
+a2dcan('cols');
 
-my @rows_tests = (
-    [   [ 0, 1 ],
-        [   [ 'Joshua',      29, 'San Mateo',     undef, 'Hannah' ],
+my @rows_cols_tests = (
+    {   indices      => [ 0, 1 ],
+        test_against => [
+            [ 'Joshua',      29, 'San Mateo',     undef, 'Hannah' ],
             [ 'Christopher', 59, 'New York City', undef, 'Alexis' ],
         ],
-        "first two rows"
-    ]
+        description => 'first two',
+    },
+    {   indices      => [ 7, 8, 9 ],
+        test_against => [
+            [ 'Ashley', 57, 'Ray' ],
+            [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
+            [ 'Joseph', 0,  'San Francisco' ],
+        ],
+        description => 'last three',
+    },
+    {   indices      => [ 4, 5 ],
+        test_against => [
+            [ 'Madison', 8, 'Vallejo' ],
+            [ 'Andrew',  -15, ],
+
+        ],
+        description => 'two middle',
+    },
+    {   indices      => [ -1, -2 ],
+        test_against => [
+            [ 'Joseph', 0, 'San Francisco' ],
+            [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
+        ],
+        description => 'last two using negative subscripts',
+    },
+
+    {   indices      => [ 2, 8 ],
+        test_against => [
+            [ 'Emily',  25, 'Dallas',     'Aix-en-Provence', 'Michael' ],
+            [ 'Alexis', 50, 'San Carlos', undef,             'Christopher' ],
+        ],
+        description => 'Two non-adjacent',
+    },
+
+    {   indices => [ 5, 3 ],
+        test_against => [ [ 'Andrew', -15, ], [ 'Nicholas', -14, ], ],
+        description => 'Two non-adjacent, in reverse order',
+    },
+    {   indices      => [ 11, 12 ],
+        test_against => [],
+        description  => 'nonexsitent',
+    },
+    {   indices      => [ -20, -21 ],
+        test_against => [],
+        description  => 'nonexsitent, with negative subscripts',
+    },
+    {   indices      => [ 8, 9, 10 ],
+        test_against => [
+            [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
+            [ 'Joseph', 0,  'San Francisco' ],
+        ],
+        description => 'range, including a nonexistent one',
+    },
+
 );
 
-for my $test_r (@rows_tests) {
-    my ( $indices_r, $test_against, $description ) = @$test_r;
+for my $test_r (@rows_cols_tests) {
+    my @indices      = @{ $test_r->{indices} };
+    my $test_against = $test_r->{test_against};
+    my $description  = $test_r->{description};
 
-    is_deeply( [ $sample_obj->rows(@$indices_r) ],
-        $test_against, "Fetched $description: sample object" );
+    my $sample_obj_result = $sample_obj->rows(@indices);
+    is_deeply( $sample_obj_result,
+        $test_against, "Fetched rows: $description: sample object" );
     is_deeply( $sample_obj, $sample_test,
         '... and it did not alter the object' );
-    is_deeply( [ Array::2D->rows( $sample_ref, @$indices_r ) ],
-        $test_against, "Fetched $description: sample reference" );
-    is_deeply(
-        $sample_ref, $sample_test,
-        '... and it did not alter the reference'
-    );
+    is_blessed($sample_obj_result);
 
-}
+    my $sample_ref_result = Array::2D->rows( $sample_ref, @indices );
+    is_deeply( $sample_ref_result,
+        $test_against, "Fetched rows: $description: sample reference" );
+    is_deeply( $sample_ref, $sample_test,
+        '... and it did not alter the reference' );
+    is_blessed($sample_ref_result);
+    
+    
+    my $sample_transposed_obj_result = $sample_transposed_obj->cols(@indices);
+    is_deeply( $sample_transposed_obj_result,
+        $test_against, "Fetched cols: $description: sample object" );
+    is_deeply( $sample_transposed_obj, $sample_transposed_test,
+        '... and it did not alter the object' );
+    is_blessed($sample_transposed_obj_result);
 
-note 'Testing cols()';
-ok( Array::2D->can('cols'), 'Can cols()' );
+    my $sample_transposed_ref_result = Array::2D->rows( $sample_ref, @indices );
+    is_deeply( $sample_transposed_ref_result,
+        $test_against, "Fetched cols: $description: sample reference" );
+    is_deeply( $sample_transposed_ref, $sample_transposed_test,
+        '... and it did not alter the reference' );
+    is_blessed($sample_transposed_ref_result);
+
+} ## tidy end: for my $test_r (@rows_cols_tests)
 
 note 'Testing slice()';
-ok( Array::2D->can('slice'), 'Can slice()' );
+a2dcan('slice');
 
 done_testing;
