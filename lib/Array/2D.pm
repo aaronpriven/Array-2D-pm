@@ -380,7 +380,6 @@ sub width {
 
 sub last_row {
     my ( $class, $self ) = &$invocant_cr;
-    return -1 unless @{$self};
     return $#{$self};
 }
 
@@ -393,19 +392,28 @@ sub last_col {
 #########################################
 ### Readers for elements, rows and columns
 
+# Note that negatives are allowed, but only
+# if they are between the negative of the dimension
+# and 0.  e.g., in an array with 5 rows, they are numbered 0
+# through 4, and can also be accessed via -5 through -1
+
 sub element {
     my ( $class, $self ) = &$invocant_cr;
-    my $rowidx = shift;
-    return undef if $rowidx > $#{$self};
-    my $colidx = shift;
-    return undef if $colidx > $#{ $self->[$rowidx] };
+
+    my $rowidx = shift || 0;
+    return undef unless -@$self <= $rowidx and $rowidx <= $#{$self};
+    my $colidx = shift || 0;
+    return undef
+      unless -@{ $self->[$rowidx] } <= $colidx
+      and $colidx <= $#{ $self->[$rowidx] };
     return $self->[$rowidx][$colidx];
 }
 
 sub row {
     my ( $class, $self ) = &$invocant_cr;
     my $rowidx = shift || 0;
-    return () if $rowidx > $#{$self};
+    return () unless -@$self <= $rowidx and $rowidx <= $#{$self};
+    # if empty, will test (0 <= $colidx and $colidx <= -1) which is always false
     my @row = @{ $self->[$rowidx] };
     pop @row while @row and not defined $row[-1];
     return @row;
@@ -413,14 +421,21 @@ sub row {
 
 sub col {
     my ( $class, $self ) = &$invocant_cr;
-    return () if $class->is_empty($self);
+
     my $colidx = shift || 0;
-    if ( $colidx < 0 ) {
-        $colidx = $colidx + $class->last_col($self) + 1;
-    }
-    my @col = map { $colidx <= $#{$_} ? $_->[$colidx] : undef } @{$self};
-    # the element if it's not less than the highest column of that row,
-    # otherwise undef
+    my $width = $class->width($self);
+    return () unless -$width <= $colidx and $colidx < $width;
+    # if empty, will test (0 <= $colidx and $colidx < 0) which is always false
+    
+    $colidx += $width if $colidx < 0;
+    # make into offset from beginning, not the end
+    # Must do this because otherwise, counts from end of *this row*, not end of
+    # whole object
+
+    my @col
+      = map { ( 0 <= $colidx && $colidx <= $#{$_} ) ? $_->[$colidx] : undef }
+      @{$self};
+    # the element if it's valid in that row, otherwise undef
     pop @col while @col and not defined $col[-1];
     return @col;
 }
@@ -428,22 +443,24 @@ sub col {
 sub rows {
     my ( $class, $self ) = &$invocant_cr;
     my @row_indices = @_;
+    my $height;
+
     my $rows
-      = $class->new( map { $#{$self} <= $_ ? $self->[$_] : [] } @row_indices );
-    # the row if it's less than or equal to the highest row idx, othewise
-    # an empty ref
+      = $class->new(
+        map { ( -@$self <= $_ && $_ <= $#{$self} ) ? $self->[$_] : [] }
+          @row_indices );
+    # the row if it's a valid row idx, othewise an empty ref
     $rows->prune();
     return $rows;
 }
 
 sub cols {
     my ( $class, $self ) = &$invocant_cr;
-
     my @col_indices = @_;
-    my $cols        = $class->empty;
-    foreach my $colidx (@col_indices) {
-        push @$cols, [ map { $self->[$_][$colidx] } 0 .. $#{$self} ];
-    }
+
+    my $cols = [ map { [ $class->col( $self, $_ ) ] } @col_indices ];
+
+    CORE::bless $cols, $class;
     $cols->prune;
     return $cols;
 }
@@ -2065,6 +2082,11 @@ character, but this warning was issued.
 Add CSV (and possibly other file type) support to new_from_file.
 
 =back
+
+=head1 SEE ALSO
+
+The L<Data::Table|Data::Table> module on CPAN provides a more conventionally
+opaque object that does many of the same things as this module.
 
 =head1 DEPENDENCIES
 

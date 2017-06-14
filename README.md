@@ -727,11 +727,6 @@ In the latter case, the array of arrays need not be blessed.
     A non-arrayref, or blessed object (other than an Array::2D object), was 
     passed to the new constructor.
 
-- Arguments to Array::2D->slice must not be negative
-
-    A negative row or column index was provided. This routine does not
-    handle that.
-
 - Sheet $sheet\_requested not found in $xlsx in Array::2D->new\_from\_xlsx
 
     Spreadsheet::ParseExcel returned an error indicating that the sheet
@@ -760,6 +755,11 @@ In the latter case, the array of arrays need not be blessed.
 # TO DO
 
 - Add CSV (and possibly other file type) support to new\_from\_file.
+
+# SEE ALSO
+
+The [Data::Table](https://metacpan.org/pod/Data::Table) module on CPAN provides a more conventionally
+opaque object that does many of the same things as this module.
 
 # DEPENDENCIES
 
