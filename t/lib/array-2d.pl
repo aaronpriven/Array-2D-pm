@@ -9,12 +9,12 @@ our $sample_test = [
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
     [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
     [ 'Nicholas',    -14, ],
-    [ 'Madison', 8, 'San Francisco' ],
+    [ 'Madison', 8, 'Vallejo' ],
     [ 'Andrew',  -15, ],
     [ 'Hannah', 38, 'Romita',     undef, 'Joshua', ],
     [ 'Ashley', 57, 'Ray' ],
     [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-    [ 'Joseph', 0, undef, 'San Francisco' ],
+    [ 'Joseph', 0, 'San Francisco' ],
 ];
 
 # $sample_test is the reference to which things are compared
@@ -24,12 +24,12 @@ our $sample_ref = [
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
     [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
     [ 'Nicholas',    -14, ],
-    [ 'Madison', 8, 'San Francisco' ],
+    [ 'Madison', 8, 'Vallejo' ],
     [ 'Andrew',  -15, ],
     [ 'Hannah', 38, 'Romita',     undef, 'Joshua', ],
     [ 'Ashley', 57, 'Ray' ],
     [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-    [ 'Joseph', 0, undef, 'San Francisco' ],
+    [ 'Joseph', 0, 'San Francisco' ],
 ];
 
 # $sample_ref is used when testing class method invocation
@@ -39,20 +39,20 @@ our $sample_obj = Array::2D->new(
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
     [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
     [ 'Nicholas',    -14, ],
-    [ 'Madison', 8, 'San Francisco' ],
+    [ 'Madison', 8, 'Vallejo' ],
     [ 'Andrew',  -15, ],
     [ 'Hannah', 38, 'Romita',     undef, 'Joshua', ],
     [ 'Ashley', 57, 'Ray' ],
     [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-    [ 'Joseph', 0, undef, 'San Francisco' ],
+    [ 'Joseph', 0, 'San Francisco' ],
 );
 
 # $sample_obj is used when testing object invocation
 
 our $one_row_obj
-  = Array::2D->new( [ 'Michael', 31, 'San Mateo', 'Vancouver', 'Emily' ], );
+  = Array::2D->new( [ 'Michael', 31, 'Union City', 'Vancouver', 'Emily' ], );
 
-our $one_row_ref = [ [ 'Michael', 31, 'San Mateo', 'Vancouver', 'Emily' ], ];
+our $one_row_ref = [ [ 'Michael', 31, 'Union City', 'Vancouver', 'Emily' ], ];
 
 our $one_col_ref = [
     ['Times'],  ['Helvetica'], ['Courier'], ['Lucida'],
