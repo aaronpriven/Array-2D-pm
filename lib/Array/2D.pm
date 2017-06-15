@@ -470,64 +470,94 @@ sub cols {
     return $cols;
 }
 
+sub slice_cols {
+    my ( $class, $self ) = &$invocant_cr;
+    my @col_indices = @_;
+    my $width       = $class->width($self);
+    for my $col_idx (@col_indices) {
+        $col_idx += $width if $col_idx < 0;
+    }
+    # must adjust this to whole object width, not just row width
+
+    my $return = [];
+
+    foreach my $row_r (@$self) {
+        my @new_row;
+        foreach my $col_idx (@col_indices) {
+            if ( -$width <= $col_idx and $col_idx < $width ) {
+                push @new_row, $row_r->[$col_idx];
+            }
+            else {
+                push @new_row, undef;
+            }
+        }
+        push @$return, \@new_row;
+    }
+
+    CORE::bless $return, $class;
+    $return->prune;
+    return $return;
+} ## tidy end: sub slice_cols
+
 sub slice {
     my ( $class, $self ) = &$invocant_cr;
 
-    my ( $firstcol, $lastcol, $firstrow, $lastrow ) = @_;
+    my ( $firstrow, $lastrow, $firstcol, $lastcol, ) = @_;
 
-    ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
-      if $lastrow < $firstrow;
+    ### adjust row indices
 
     my $self_lastrow = $class->last_row($self);
 
-    foreach my $row ( $firstrow, $lastrow ) {
-        next unless $row < 0;
-        $row += $class->height($self);
+    foreach my $row_idx ( $firstrow, $lastrow ) {
+        next unless $row_idx < 0;
+        $row_idx += $self_lastrow + 1;
     }
 
-    # if it's specifying an area entirely off the beginning or end
-    # of the array, return empty
-    if ( $lastrow < 0 or $self_lastrow < $firstrow ) {
-        return $class->empty() if defined wantarray;
-        @{$self} = ();
-        return;
-    }
+    ### adjust col indices
 
-    # otherwise, if it's at least partially in the array, set the bounds
-    # to be within the array.
-    $lastrow  = $self_lastrow if $self_lastrow < $lastrow;
-    $firstrow = 0             if $firstrow < 0;
+    my $self_lastcol = $class->last_col($self);
 
-    my $rows = $class->rows( $self, $firstrow .. $lastrow );
-
-    # if negative, get the column from the end (of original, not of these rows)
     foreach my $col ( $firstcol, $lastcol ) {
         next unless $col < 0;
-        $col += $class->width($self);
+        $col += $self_lastcol + 1;
     }
+
+    ### sort indices
+
+    ( $firstrow, $lastrow ) = ( $lastrow, $firstrow )
+      if $lastrow < $firstrow;
 
     ( $firstcol, $lastcol ) = ( $lastcol, $firstcol )
       if $lastcol < $firstcol;
 
     # if it's specifying an area entirely off the beginning or end
     # of the array, return empty
-    if ( $lastcol < 0 or $self_lastrow < $firstrow ) {
+    if (   $lastrow < 0
+        or $self_lastrow < $firstrow
+        or $lastcol < 0
+        or $self_lastcol < $firstcol )
+    {
         return $class->empty() if defined wantarray;
         @{$self} = ();
         return;
     }
 
-    # otherwise, if it's at least partially in the array, set the bounds
-    # to be within the rows.
+    # otherwise, since it's at least partially in the array, set the rows
+    # to be within the array.
+    $lastrow  = $self_lastrow if $self_lastrow < $lastrow;
+    $firstrow = 0             if $firstrow < 0;
+
+    my $rows = $class->rows( $self, $firstrow .. $lastrow );
+
+    # set the bounds to be within the column of these rows
     $firstcol = 0 if $firstcol < 0;
     my $rows_lastcol = $class->last_col($rows);
     $lastcol = $rows_lastcol if $rows_lastcol < $lastcol;
 
-    my $new = $class->cols( $rows, $firstcol .. $lastcol );
+    my $new = $class->slice_cols( $rows, $firstcol .. $lastcol );
     return $new if defined wantarray;
     @{$self} = @{$new};
     return;
-
 } ## tidy end: sub slice
 
 #########################################
@@ -1421,8 +1451,8 @@ to regular Perl constructions.
 It is assumed that row and column indexes passed to the methods are integers.
 If they are negative, they will count from the end instead of
 the beginning, as in regular Perl array subscripts.  The behavior of the module
-when anything else is passed in (strings, undef, NaN, objects, etc.) is 
-unknown.
+when anything else is passed in (strings, undef, floats, NaN, objects, etc.) is 
+unspecified. Don't do that.
 
 =back
 
@@ -1661,11 +1691,27 @@ Returns the elements in the given column.
 Returns a new Array::2D object with all the columns of the 
 specified rows.
 
+Note that duplicates are not de-duplicated, so the result of
+$obj->rows(1,1,1) will be three copies of the same row.
+
 =item B<cols(I<col_idx>, <col_idx>...)>
 
-Returns a new Array::2D object with all the rows of the specified columns.
+Returns a new Array::2D object with the specified columns. This is transposed
+from the original array's order, so each column requested will be in its own
+row.
 
-=item B<slice(I<firstcol_idx, lastcol_idx, firstrow_idx, lastrow_idx>)>
+Note that duplicates are not de-duplicated, so the result of
+$obj->cols(1,1,1) will retrieve three copies of the same column.
+
+=item B<slice_cols(I<col_idx>, <col_idx>...)>
+
+Returns a new Array::2D object with the specified columns of each row.
+Unlike C<slice()>, the result of this method is not transposed.
+
+Note that duplicates are not de-duplicated, so the result of
+$obj->cols(1,1,1) will retrieve three copies of the same column.
+
+=item B<slice(I<row_idx_from, col_idx_to, col_idx_from, col_idx_to>)>
 
 Takes a two-dimensional slice of the object; like cutting a rectangle
 out of the object.
@@ -1673,6 +1719,12 @@ out of the object.
 In void context, alters the original object, which then will contain
 only the area specified; otherwise, creates a new Array::2D 
 object and returns the object.
+
+Negative indicies are treated as though they mean that many from the end:
+the last item is -1, the second-to-last is -2, and so on. 
+
+Slices are always returned in the order of the original object, so 
+$obj->slice(0,1,0,1) is the same as $obj->slice(1,0,1,0).
 
 =item B<set_element(I<row_idx, col_idx, value>)>
 

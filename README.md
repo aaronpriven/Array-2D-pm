@@ -109,8 +109,8 @@ to regular Perl constructions.
 - It is assumed that row and column indexes passed to the methods are integers.
 If they are negative, they will count from the end instead of
 the beginning, as in regular Perl array subscripts.  The behavior of the module
-when anything else is passed in (strings, undef, NaN, objects, etc.) is 
-unknown.
+when anything else is passed in (strings, undef, floats, NaN, objects, etc.) is 
+unspecified. Don't do that.
 
 ## CLASS METHODS
 
@@ -334,11 +334,27 @@ In the latter case, the array of arrays need not be blessed.
     Returns a new Array::2D object with all the columns of the 
     specified rows.
 
+    Note that duplicates are not de-duplicated, so the result of
+    $obj->rows(1,1,1) will be three copies of the same row.
+
 - **cols(_col\_idx_, &lt;col\_idx**...)>
 
-    Returns a new Array::2D object with all the rows of the specified columns.
+    Returns a new Array::2D object with the specified columns. This is transposed
+    from the original array's order, so each column requested will be in its own
+    row.
 
-- **slice(_firstcol\_idx, lastcol\_idx, firstrow\_idx, lastrow\_idx_)**
+    Note that duplicates are not de-duplicated, so the result of
+    $obj->cols(1,1,1) will retrieve three copies of the same column.
+
+- **slice\_cols(_col\_idx_, &lt;col\_idx**...)>
+
+    Returns a new Array::2D object with the specified columns of each row.
+    Unlike `slice()`, the result of this method is not transposed.
+
+    Note that duplicates are not de-duplicated, so the result of
+    $obj->cols(1,1,1) will retrieve three copies of the same column.
+
+- **slice(_row\_idx\_from, col\_idx\_to, col\_idx\_from, col\_idx\_to_)**
 
     Takes a two-dimensional slice of the object; like cutting a rectangle
     out of the object.
@@ -346,6 +362,12 @@ In the latter case, the array of arrays need not be blessed.
     In void context, alters the original object, which then will contain
     only the area specified; otherwise, creates a new Array::2D 
     object and returns the object.
+
+    Negative indicies are treated as though they mean that many from the end:
+    the last item is -1, the second-to-last is -2, and so on. 
+
+    Slices are always returned in the order of the original object, so 
+    $obj->slice(0,1,0,1) is the same as $obj->slice(1,0,1,0).
 
 - **set\_element(_row\_idx, col\_idx, value_)**
 
