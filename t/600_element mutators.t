@@ -6,26 +6,6 @@ BEGIN {
       // die "Can't load array-2d.pl";
 }
 
-note 'Testing prune()';
-
-ok(Array::2D->can('prune'), 'Can prune()');
-
-
-note 'Testing prune_empty()';
-
-ok(Array::2D->can('prune_empty'), 'Can prune_empty()');
-
-
-note 'Testing prune_space()';
-
-ok(Array::2D->can('prune_space'), 'Can prune_space()');
-
-
-note 'Testing prune_callback()';
-
-ok(Array::2D->can('prune_callback'), 'Can prune_callback()');
-
-
 note 'Testing apply()';
 
 ok(Array::2D->can('apply'), 'Can apply()');
