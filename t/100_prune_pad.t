@@ -8,6 +8,58 @@ BEGIN {
 
 plan tests => 65;
 
+# Prune_* is tested before the readers because rows() and cols() depend on 
+# prune()
+
+# similarly, prune_callback is tested before the other prunes because
+# those use prune_callback to do their work
+
+my $prune_test = [ [ 1, 2 ], [3], [ 4, 5, 6 ] ];
+
+note 'Testing prune_callback()';
+a2dcan('prune_callback');
+
+my $obj_to_prunecallback = Array::2D->new(
+    [ 1, 2,     ' ', '' ],
+    [ 3, undef, 'z' ],
+    [ 4, 5,     6 ],
+    [], ["\n"]
+);
+
+my $ref_to_prunecallback
+  = [ [ 1, 2, ' ', '' ], [ 3, undef, 'z' ], [ 4, 5, 6 ], [], ["\n"] ];
+
+my $prunecallback_unchanged
+  = [ [ 1, 2, ' ', '' ], [ 3, undef, 'z' ], [ 4, 5, 6 ], [], ["\n"] ];
+
+my $callback = sub { not defined $_ or $_ =~ /\A\s*\z/ or $_ eq 'z' };
+
+my $prunecallback_obj_results
+  = $obj_to_prunecallback->prune_callback($callback);
+is_deeply( $prunecallback_obj_results, $prune_test,
+    'Got prune-callbackd from object' );
+is_blessed($prunecallback_obj_results);
+is_deeply( $obj_to_prunecallback, $prunecallback_unchanged,
+    '... and the object is not changed' );
+
+my $prunecallback_ref_results
+  = Array::2D->prune_callback( $ref_to_prunecallback, $callback );
+is_deeply( $prunecallback_ref_results, $prune_test,
+    'Got prune-callbackd from reference' );
+is_blessed($prunecallback_ref_results);
+is_deeply( $ref_to_prunecallback, $prunecallback_unchanged,
+    '... and the reference is not changed' );
+
+$obj_to_prunecallback->prune_callback($callback);
+is_deeply( $obj_to_prunecallback, $prune_test,
+    'Prune-callbackd object in place' );
+is_blessed($obj_to_prunecallback);
+
+Array::2D->prune_callback( $ref_to_prunecallback, $callback );
+is_deeply( $ref_to_prunecallback, $prune_test,
+    'Prune-callbackd reference in place' );
+isnt_blessed($ref_to_prunecallback);
+
 note 'Testing prune()';
 a2dcan('prune');
 
@@ -18,7 +70,6 @@ my $ref_to_prune = [ [ 1, 2, undef ], [ 3, undef ], [ 4, 5, 6 ], [] ];
 
 my $prune_unchanged = [ [ 1, 2, undef ], [ 3, undef ], [ 4, 5, 6 ], [] ];
 
-my $prune_test = [ [ 1, 2 ], [3], [ 4, 5, 6 ] ];
 
 my $prune_obj_results = $obj_to_prune->prune();
 is_deeply( $prune_obj_results, $prune_test, 'Got pruned from object' );
@@ -111,49 +162,7 @@ Array::2D->prune_space($ref_to_prunespace);
 is_deeply( $ref_to_prunespace, $prune_test, 'Prune-spaced reference in place' );
 isnt_blessed($ref_to_prunespace);
 
-note 'Testing prune_callback()';
-a2dcan('prune_callback');
 
-my $obj_to_prunecallback = Array::2D->new(
-    [ 1, 2,     ' ', '' ],
-    [ 3, undef, 'z' ],
-    [ 4, 5,     6 ],
-    [], ["\n"]
-);
-
-my $ref_to_prunecallback
-  = [ [ 1, 2, ' ', '' ], [ 3, undef, 'z' ], [ 4, 5, 6 ], [], ["\n"] ];
-
-my $prunecallback_unchanged
-  = [ [ 1, 2, ' ', '' ], [ 3, undef, 'z' ], [ 4, 5, 6 ], [], ["\n"] ];
-
-my $callback = sub { not defined $_ or $_ =~ /\A\s*\z/ or $_ eq 'z' };
-
-my $prunecallback_obj_results
-  = $obj_to_prunecallback->prune_callback($callback);
-is_deeply( $prunecallback_obj_results, $prune_test,
-    'Got prune-callbackd from object' );
-is_blessed($prunecallback_obj_results);
-is_deeply( $obj_to_prunecallback, $prunecallback_unchanged,
-    '... and the object is not changed' );
-
-my $prunecallback_ref_results
-  = Array::2D->prune_callback( $ref_to_prunecallback, $callback );
-is_deeply( $prunecallback_ref_results, $prune_test,
-    'Got prune-callbackd from reference' );
-is_blessed($prunecallback_ref_results);
-is_deeply( $ref_to_prunecallback, $prunecallback_unchanged,
-    '... and the reference is not changed' );
-
-$obj_to_prunecallback->prune_callback($callback);
-is_deeply( $obj_to_prunecallback, $prune_test,
-    'Prune-callbackd object in place' );
-is_blessed($obj_to_prunecallback);
-
-Array::2D->prune_callback( $ref_to_prunecallback, $callback );
-is_deeply( $ref_to_prunecallback, $prune_test,
-    'Prune-callbackd reference in place' );
-isnt_blessed($ref_to_prunecallback);
 
 note 'Testing pad()';
 
