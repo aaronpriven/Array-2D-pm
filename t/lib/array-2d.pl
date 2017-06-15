@@ -145,7 +145,6 @@ sub isnt_blessed {
     else {
         $description = '... and result is not blessed';
     }
-    my $description = shift // q[];
     is( blessed($obj), undef, $description );
 }
 
