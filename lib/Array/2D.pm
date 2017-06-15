@@ -583,7 +583,7 @@ sub set_col {
     my ( $class, $self ) = &$invocant_cr;
     my $colidx   = shift;
     my @elements = @_;
-    for my $rowidx ( 0 .. max( $self->last_row, $#elements ) ) {
+    for my $rowidx ( 0 .. max( $class->last_row($self), $#elements ) ) {
         $self->[$rowidx][$colidx] = $elements[$rowidx];
     }
 }
@@ -607,8 +607,10 @@ sub set_cols {
 
     foreach my $given_colidx ( 0 .. $#given_cols ) {
         my @given_elements = @{ $given_cols[$given_colidx] };
-        $self->set_col( $self_start_colidx + $given_colidx, @given_elements );
+        $class->set_col( $self, $self_start_colidx + $given_colidx,
+            @given_elements );
     }
+    return;
 }
 
 sub set_slice {
