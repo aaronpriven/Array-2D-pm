@@ -8,7 +8,7 @@ BEGIN {
 
 our ( $sample_obj,            $sample_ref,            $sample_test );
 our ( $sample_transposed_obj, $sample_transposed_ref, $sample_transposed_test );
-our ( $empty_obj, $empty_ref );
+our ( $empty_obj,             $empty_ref );
 
 #our ( $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref );
 
@@ -26,8 +26,8 @@ my @element_tests = (
     [ 3,  4,  'Fetched an empty element' ],
     [ 12, 2,  'Fetched element from nonexistent row' ],
     [ 2,  6,  'Fetched element from nonexistent column' ],
-    [ -20, 0,  'Fetched element from nonexistent negative row' ],
-    [ 0,   -9, 'Fetched element from nonexistent negative column' ],
+    [ -20,   0,     'Fetched element from nonexistent negative row' ],
+    [ 0,     -9,    'Fetched element from nonexistent negative column' ],
 );
 
 for my $test_r (@element_tests) {
@@ -68,8 +68,8 @@ my @row_tests = (
         [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
         'row with negative index'
     ],
-    [ 10,  [], 'nonexistent row' ],
-    [ -20, [], 'nonexistent negative row' ],
+    [ 10,    [], 'nonexistent row' ],
+    [ -20,   [], 'nonexistent negative row' ],
 );
 
 # row returns a list, so we have to create anonymous arrayref to test
@@ -115,8 +115,8 @@ my @col_tests = (
         ],
         'column with negative index',
     ],
-    [ 6,  [], 'nonexistent column' ],
-    [ -9, [], 'nonexistent negative column' ],
+    [ 6,     [], 'nonexistent column' ],
+    [ -9,    [], 'nonexistent negative column' ],
 );
 
 # col returns a list, so we have to create anonymous arrayref to test
@@ -196,6 +196,13 @@ my @rows_cols_tests = (
         ],
         description => 'range, including a nonexistent one',
     },
+        {   indices      => [ 5, 5 ],
+        test_against => [
+            [ 'Andrew',  -15, ],
+            [ 'Andrew',  -15, ],
+        ],
+        description => 'two duplicates',
+    },
 
 );
 
@@ -217,8 +224,7 @@ for my $test_r (@rows_cols_tests) {
     is_deeply( $sample_ref, $sample_test,
         '... and it did not alter the reference' );
     is_blessed($sample_ref_result);
-    
-    
+
     my $sample_transposed_obj_result = $sample_transposed_obj->cols(@indices);
     is_deeply( $sample_transposed_obj_result,
         $test_against, "Fetched cols: $description: sample object" );

@@ -8,11 +8,11 @@ BEGIN {
 
 note 'Testing transpose()';
 
-ok(Array::2D->can('transpose'), 'Can transpose()');
+a2dcan('transpose');
 
 
 note 'Testing flattened()';
 
-ok(Array::2D->can('flattened'), 'Can flattened()');
+a2dcan('flattened');
 
 done_testing;
