@@ -400,9 +400,10 @@ sub last_col {
 sub element {
     my ( $class, $self ) = &$invocant_cr;
 
-    my $rowidx = shift || 0;
-    return undef unless -@$self <= $rowidx and $rowidx <= $#{$self};
-    my $colidx = shift || 0;
+    my $rowidx = shift;
+    return undef
+      unless -@$self <= $rowidx and $rowidx <= $#{$self};
+    my $colidx = shift;
     return undef
       unless -@{ $self->[$rowidx] } <= $colidx
       and $colidx <= $#{ $self->[$rowidx] };
@@ -411,8 +412,10 @@ sub element {
 
 sub row {
     my ( $class, $self ) = &$invocant_cr;
-    my $rowidx = shift || 0;
-    return () unless -@$self <= $rowidx and $rowidx <= $#{$self};
+    my $rowidx = shift;
+    return ()
+      unless -@$self <= $rowidx
+      and $rowidx <= $#{$self};
     # if empty, will test (0 <= $colidx and $colidx <= -1) which is always false
     my @row = @{ $self->[$rowidx] };
     pop @row while @row and not defined $row[-1];
@@ -422,11 +425,13 @@ sub row {
 sub col {
     my ( $class, $self ) = &$invocant_cr;
 
-    my $colidx = shift || 0;
-    my $width = $class->width($self);
-    return () unless -$width <= $colidx and $colidx < $width;
+    my $colidx = shift;
+    my $width  = $class->width($self);
+    return ()
+      unless -$width <= $colidx
+      and $colidx < $width;
     # if empty, will test (0 <= $colidx and $colidx < 0) which is always false
-    
+
     $colidx += $width if $colidx < 0;
     # make into offset from beginning, not the end
     # Must do this because otherwise, counts from end of *this row*, not end of
@@ -438,7 +443,7 @@ sub col {
     # the element if it's valid in that row, otherwise undef
     pop @col while @col and not defined $col[-1];
     return @col;
-}
+} ## tidy end: sub col
 
 sub rows {
     my ( $class, $self ) = &$invocant_cr;
@@ -873,6 +878,33 @@ sub transpose {
 
 } ## tidy end: sub transpose
 
+sub pad {
+    my ( $class, $orig ) = &$invocant_cr;
+    my $padding = shift;
+    my $self;
+    if ( defined wantarray ) {
+        $self = $class->clone($orig);
+    }
+    else {
+        $self = $orig;
+    }
+    my $last_col = $class->last_col($self);
+
+    if ( not defined $padding ) {
+        foreach (@$self) {
+            $#{$_} = $last_col;
+        }
+    }
+    else {
+        foreach (@$self) {
+            push @$_, $padding while $#{$_} < $last_col;
+        }
+    }
+
+    return $self;
+
+} ## tidy end: sub pad
+
 sub prune {
     my ( $class, $self ) = &$invocant_cr;
     my $callback = sub { !defined $_ };
@@ -1257,8 +1289,6 @@ sub xlsx {
 
 } ## tidy end: sub xlsx
 
-### _TEXT_COLUMNS
-
 1;
 
 __END__
@@ -1295,7 +1325,8 @@ This documentation refers to version 0.001_001
 
 Array::2D is a module that adds useful methods to Perl's
 standard array of arrays ("AoA") data structure, as described in 
-L<Perl's perldsc documentation|perldsc>.  That is, an array that
+L<Perl's perldsc documentation|perldsc> and 
+L<Perl's perllol documentation|perllol>.  That is, an array that
 contains other arrays:
 
  [ 
@@ -1321,17 +1352,42 @@ Array::2D uses "row" for the first dimension, and "column" or
 of (row, column) is the opposite of the usual (x,y) algebraic order.
 
 Because this object is just an array of arrays, most of the methods
-referring  to rows are here mainly for completeness, and aren't really
-more useful than the native Perl construction (e.g., C<<
+referring to rows are here mainly for completeness, and aren't 
+much more useful than the native Perl construction (e.g., C<<
 $array2d->last_row() >> is just a slower way of doing C<< $#{$array2d}
->>.)
+>>.) They will also typically be much slower.
 
 On the other hand, most of the methods referring to columns are useful,
-since there's no simple way of doing that in Perl.  Notably, the column
+since there's no simple way of fetching a column or columns in Perl.  
+
+Notably, the column
 methods are careful, when a row doesn't have an entry, to to fill out
-the column with undefined values. In other words, if there are five 
-rows in the object, a requested column will always return five values,
-although some of them might be undefined.
+the column with undefined values up to the last defined value.
+In other words, if you have a column in an array-of-arrays of five rows, 
+and there's only a value in the fourth row, then that column, when
+returned, will look like ( undef, undef, undef, 'value'), 
+not just ('value').
+
+In general, however, the array is not always fully padded out -- undefined
+values are added at the beginning of each row to ensure that elements
+have the correct column indices, but they do not necessarily have
+values padded out to the highest column.  For example, the following would
+be valid:
+
+ [
+  [ undef, 1, 2 ],
+  [     3  ],
+  [     4, 6 ],
+ ]
+
+The columns would be returned as (undef, 3, 4), (1, undef, 6), and (2). 
+
+The C<prune()> method will eliminate excess padding.  The C<pad()> method
+will pad out the object to the highest row and column with a defined value.
+
+(Padding state is not guaranteed to be consistent because the object
+is designed to allow standard Perl constructs to apply to it, and those
+do not preserve padding state.)
 
 =head1 METHODS
 
@@ -1341,9 +1397,9 @@ Some general notes:
 
 =item *
 
-In all cases where an array of arrays is specified (I<aoa_ref>), this
-can be either an Array::2D object or an array of arrays data
-structure that is not an object. 
+In all cases where an array of arrays is specified as an argument 
+(I<aoa_ref>), this can be either an Array::2D object or a regular  
+array of arrays data structure that is not an object. 
 
 =item *
 
@@ -1357,6 +1413,16 @@ Some care is taken to ensure that rows are not autovivified.  Normally, if the
 highest row in an arrayref-of-arrayrefs is 2, and a program
 attempts to read the value of $aoa->[3]->[$anything], Perl will create 
 an empty third row.  This module avoids autovification from just reading data.
+This is the only advantage of methods like C<element>, C<row>, etc. compared
+to regular Perl constructions.
+
+=item *
+
+It is assumed that row and column indexes passed to the methods are integers.
+If they are negative, they will count from the end instead of
+the beginning, as in regular Perl array subscripts.  The behavior of the module
+when anything else is passed in (strings, undef, NaN, objects, etc.) is 
+unknown.
 
 =back
 
@@ -1767,8 +1833,6 @@ Array::2D object of those rows.
 Removes the columns of the object specified by the indices. Returns an
 Array::2D object of those columns.
 
-
-
 =item B<transpose()>
 
 Transposes the object: the elements that used to be in rows are now in
@@ -1835,6 +1899,12 @@ string, or zero:
 
 In void context, alters the original object. Otherwise, creates a new
 Array::2D object and returns the object.
+
+=item B<pad(I<value>)>
+
+The opposite of C<prune()>, this pads out the array so every column
+has the same number of elements.  If provided, the added elements are
+given the value provided; otherwise, they are set to undef.
 
 =item B<apply(I<coderef>)>
 
