@@ -9,10 +9,12 @@ BEGIN {
 note 'Testing transpose()';
 
 a2dcan('transpose');
+# low
 
 
 note 'Testing flattened()';
 
 a2dcan('flattened');
+# low
 
 done_testing;

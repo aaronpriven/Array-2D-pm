@@ -7,22 +7,19 @@ BEGIN {
 }
 
 note 'Testing new_to_term_width()';
-
-ok(Array::2D->can('new_to_term_width'), 'Can new_to_term_width()');
-
+a2dcan('new_to_term_width');
+# high
 
 note 'Testing tabulate_equal_width()';
-
-ok(Array::2D->can('tabulate_equal_width'), 'Can tabulate_equal_width()');
-
+a2dcan('tabulate_equal_width');
+# high
 
 note 'Testing tabulate()';
-
-ok(Array::2D->can('tabulate'), 'Can tabulate()');
-
+a2dcan('tabulate');
+# high
 
 note 'Testing tabulated()';
-
-ok(Array::2D->can('tabulated'), 'Can tabulated()');
+a2dcan('tabulated');
+# high
 
 done_testing;

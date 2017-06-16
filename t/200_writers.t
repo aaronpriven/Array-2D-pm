@@ -325,15 +325,17 @@ my @set_col_tests = (
         "... and it's the expected exception",
     );
 }
-    
 
 note 'Testing set_rows()';
 a2dcan('set_rows');
+# low priority
 
 note 'Testing set_cols()';
 a2dcan('set_cols');
+# low priority
 
 note 'Testing set_slice()';
 a2dcan('set_slice');
+# low priority
 
 done_testing;

@@ -7,22 +7,19 @@ BEGIN {
 }
 
 note 'Testing apply()';
-
-ok(Array::2D->can('apply'), 'Can apply()');
-
+a2dcan('apply');
+# high
 
 note 'Testing trim()';
-
-ok(Array::2D->can('trim'), 'Can trim()');
-
+a2dcan('trim');
+# low
 
 note 'Testing trim_right()';
-
-ok(Array::2D->can('trim_right'), 'Can trim_right()');
-
+a2dcan('trim_right');
+# low
 
 note 'Testing define()';
-
-ok(Array::2D->can('define'), 'Can define()');
+a2dcan('define');
+# low
 
 done_testing;

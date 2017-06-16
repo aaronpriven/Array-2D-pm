@@ -7,62 +7,51 @@ BEGIN {
 }
 
 note 'Testing ins_row()';
-
-ok(Array::2D->can('ins_row'), 'Can ins_row()');
-
+a2dcan('ins_row');
+# low priority
 
 note 'Testing ins_col()';
-
-ok(Array::2D->can('ins_col'), 'Can ins_col()');
-
+a2dcan('ins_col');
+# high priority
 
 note 'Testing ins_rows()';
-
-ok(Array::2D->can('ins_rows'), 'Can ins_rows()');
-
+a2dcan('ins_rows');
+# low
 
 note 'Testing ins_cols()';
-
-ok(Array::2D->can('ins_cols'), 'Can ins_cols()');
-
+a2dcan('ins_cols');
+#low
 
 note 'Testing push_row()';
-
-ok(Array::2D->can('push_row'), 'Can push_row()');
-
+a2dcan('push_row');
+# high
 
 note 'Testing push_col()';
-
-ok(Array::2D->can('push_col'), 'Can push_col()');
-
+a2dcan('push_col');
+# high
 
 note 'Testing push_rows()';
-
-ok(Array::2D->can('push_rows'), 'Can push_rows()');
-
+a2dcan('push_rows');
+# low
 
 note 'Testing push_cols()';
-
-ok(Array::2D->can('push_cols'), 'Can push_cols()');
-
+a2dcan('push_cols');
+# low
 
 note 'Testing unshift_row()';
-
-ok(Array::2D->can('unshift_row'), 'Can unshift_row()');
-
+a2dcan('unshift_row');
+# high
 
 note 'Testing unshift_col()';
-
-ok(Array::2D->can('unshift_col'), 'Can unshift_col()');
-
+a2dcan('unshift_col');
+# low
 
 note 'Testing unshift_rows()';
-
-ok(Array::2D->can('unshift_rows'), 'Can unshift_rows()');
-
+a2dcan('unshift_rows');
+#low
 
 note 'Testing unshift_cols()';
-
-ok(Array::2D->can('unshift_cols'), 'Can unshift_cols()');
+a2dcan('unshift_cols');
+# low
 
 done_testing;

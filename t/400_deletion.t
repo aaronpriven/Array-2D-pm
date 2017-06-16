@@ -7,42 +7,49 @@ BEGIN {
 }
 
 note 'Testing del_row()';
-
-ok(Array::2D->can('del_row'), 'Can del_row()');
+a2dcan('del_row');
+# low
 
 
 note 'Testing del_col()';
 
-ok(Array::2D->can('del_col'), 'Can del_col()');
+a2dcan('del_col');
 
+# low
 
 note 'Testing del_rows()';
 
-ok(Array::2D->can('del_rows'), 'Can del_rows()');
+a2dcan('del_rows');
+# low
 
 
 note 'Testing del_cols()';
 
-ok(Array::2D->can('del_cols'), 'Can del_cols()');
+a2dcan('del_cols');
 
+# low
 
 note 'Testing shift_row()';
 
-ok(Array::2D->can('shift_row'), 'Can shift_row()');
+a2dcan('shift_row');
+
+# high
 
 
 note 'Testing shift_col()';
 
-ok(Array::2D->can('shift_col'), 'Can shift_col()');
-
+a2dcan('shift_col');
+# low
 
 note 'Testing pop_row()';
 
-ok(Array::2D->can('pop_row'), 'Can pop_row()');
+a2dcan('pop_row');
+# low
 
 
 note 'Testing pop_col()';
 
-ok(Array::2D->can('pop_col'), 'Can pop_col()');
+a2dcan('pop_col');
+# low
 
 done_testing;

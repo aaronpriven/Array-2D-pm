@@ -8,11 +8,14 @@ BEGIN {
 
 note 'Testing hash_of_rows()';
 
-ok(Array::2D->can('hash_of_rows'), 'Can hash_of_rows()');
+a2dcan('hash_of_rows');
+# low
 
 
 note 'Testing hash_of_row_elements()';
 
-ok(Array::2D->can('hash_of_row_elements'), 'Can hash_of_row_elements()');
+a2dcan('hash_of_row_elements');
+
+# low
 
 done_testing;
