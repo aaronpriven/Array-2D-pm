@@ -31,3 +31,4 @@ cover_db/
 MYMETA.*
 
 /Array-2D-*
+.DS_Store
