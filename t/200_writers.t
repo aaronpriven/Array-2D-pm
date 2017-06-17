@@ -178,126 +178,181 @@ my @set_row_tests = (
         value       => [qw/q r s/],
         description => 'Add a new value below the bottom'
     },
-);
-
-
-    note "Testing set_row()";
-    a2dcan('set_row');
-
-    for my $test_r (@set_row_tests) {
-        my $idx          = ${ $test_r->{indices} }[0];
-        my $test_against = $test_r->{test_against};
-        my $description  = $test_r->{description};
-        my @values       = @{ $test_r->{value} };
-
-        my $sample_obj = Array::2D->clone($set_ref);
-        my $sample_ref = Array::2D->clone_unblessed($set_ref);
-
-        $sample_obj->set_row( $idx, @values );
-        is_deeply( $sample_obj,
-            $test_against, "set_row: $description: sample object" );
-        is_blessed($sample_obj);
-
-        Array::2D->set_row( $sample_ref, $idx, @values );
-        is_deeply( $sample_ref,
-            $test_against, "set_row: $description: sample reference" );
-        isnt_blessed($sample_ref);
-    }
-
-    my $sample_die_obj = Array::2D->clone($set_ref);
-    my $sample_die_ref = Array::2D->clone_unblessed($set_ref);
-
-    my $exception_obj
-      = exception( sub { $sample_die_obj->set_row( -5, ['New value'] ) } );
-
-    isnt( $exception_obj, undef,
-        '$obj->set_row dies with invalid negative indices' );
-    like(
-        $exception_obj,
-        qr/Modification of non-creatable array value/,
-        "... and it's the expected exception",
-    );
-
-    my $exception_ref
-      = exception(
-        sub { Array::2D->set_row( $sample_die_ref, -5, ['New value'] ) } );
-    isnt( $exception_ref, undef,
-        'set_row($ref) dies with invalid negative indices' );
-    like(
-        $exception_ref,
-        qr/Modification of non-creatable array value/,
-        "... and it's the expected exception",
-    );
-    
- 
-my @set_col_tests = (
-    {   indices => [0],
-        test_against =>
-        [ [ 'q', 1, 'x' ], [ 'r', 2, 'y' ], [ 's', 3, 'z' ], ],
-        value       => [qw/q r s/],
-        description => 'Replace a row (top)'
+    {   indices      => [1],
+        test_against => [ [ 'a', 1, 'x' ], [ 'q', 'r' ], [ 'c', 3, 'z' ], ],
+        value        => [qw/q r/],
+        description  => 'Replace a row with a shorter row'
     },
     {   indices => [1],
         test_against =>
-        [ [ 'a', 'q', 'x' ], [ 'b', 'r', 'y' ], [ 'c', 's', 'z' ], ],
+          [ [ 'a', 1, 'x' ], [ 'q', undef, 's' ], [ 'c', 3, 'z' ], ],
+        value => [ 'q', undef, 's' ],
+        description => 'Replace a row with one with an undefined value'
+    },
+    {   indices      => [1],
+        test_against => [ [ 'a', 1, 'x' ], [qw/q r s t/], [ 'c', 3, 'z' ], ],
+        value        => [qw/q r s t/],
+        description  => 'Replace a row with a longer row'
+    },
+
+);
+
+note "Testing set_row()";
+a2dcan('set_row');
+
+for my $test_r (@set_row_tests) {
+    my $idx          = ${ $test_r->{indices} }[0];
+    my $test_against = $test_r->{test_against};
+    my $description  = $test_r->{description};
+    my @values       = @{ $test_r->{value} };
+
+    my $sample_obj = Array::2D->clone($set_ref);
+    my $sample_ref = Array::2D->clone_unblessed($set_ref);
+
+    $sample_obj->set_row( $idx, @values );
+    is_deeply( $sample_obj,
+        $test_against, "set_row: $description: sample object" );
+    is_blessed($sample_obj);
+
+    Array::2D->set_row( $sample_ref, $idx, @values );
+    is_deeply( $sample_ref,
+        $test_against, "set_row: $description: sample reference" );
+    isnt_blessed($sample_ref);
+}
+
+my $sample_die_obj = Array::2D->clone($set_ref);
+my $sample_die_ref = Array::2D->clone_unblessed($set_ref);
+
+my $exception_obj
+  = exception( sub { $sample_die_obj->set_row( -5, ['New value'] ) } );
+
+isnt( $exception_obj, undef,
+    '$obj->set_row dies with invalid negative indices' );
+like(
+    $exception_obj,
+    qr/Modification of non-creatable array value/,
+    "... and it's the expected exception",
+);
+
+my $exception_ref
+  = exception( sub { Array::2D->set_row( $sample_die_ref, -5, ['New value'] ) }
+  );
+isnt( $exception_ref, undef,
+    'set_row($ref) dies with invalid negative indices' );
+like(
+    $exception_ref,
+    qr/Modification of non-creatable array value/,
+    "... and it's the expected exception",
+);
+
+my @set_col_tests = (
+    {   indices      => [0],
+        test_against => [ [ 'q', 1, 'x' ], [ 'r', 2, 'y' ], [ 's', 3, 'z' ], ],
+        value        => [qw/q r s/],
+        description  => 'Replace a column (left)'
+    },
+    {   indices => [1],
+        test_against =>
+          [ [ 'a', 'q', 'x' ], [ 'b', 'r', 'y' ], [ 'c', 's', 'z' ], ],
         value       => [qw/q r s/],
-        description => 'Replace a row (middle)'
+        description => 'Replace a column (middle)'
     },
     {   indices => [-2],
         test_against =>
-        [ [ 'a', 'q', 'x' ], [ 'b', 'r', 'y' ], [ 'c', 's', 'z' ], ],
+          [ [ 'a', 'q', 'x' ], [ 'b', 'r', 'y' ], [ 'c', 's', 'z' ], ],
         value       => [qw/q r s/],
-        description => 'Replace a row (negative index)'
+        description => 'Replace a column (negative index)'
     },
     {   indices      => [2],
-        test_against => 
-        [ [ 'a', 1, 'q' ], [ 'b', 2, 'r' ], [ 'c', 3, 's' ], ],
+        test_against => [ [ 'a', 1, 'q' ], [ 'b', 2, 'r' ], [ 'c', 3, 's' ], ],
         value        => [qw/q r s/],
-        description  => 'Replace a row (final row)'
+        description  => 'Replace a column (final column)'
     },
-    {   indices      => [3],
-        test_against => [
-            [ 'a', 1,   'x' , 'q'],
-            [ 'b', 2,   'y' , 'r' ],
-            [ 'c', 3,   'z' , 's' ],
-        ],
+    {   indices => [3],
+        test_against =>
+          [ [ 'a', 1, 'x', 'q' ], [ 'b', 2, 'y', 'r' ], [ 'c', 3, 'z', 's' ], ],
         value       => [qw/q r s/],
-        description => 'Add a new row at the bottom'
+        description => 'Add a new column at the right'
     },
     {   indices      => [4],
         test_against => [
-            [ 'a', 1, 'x' , undef, 'q'],
-            [ 'b', 2, 'y' , undef, 'r'],
-            [ 'c', 3, 'z' , undef, 's'],
+            [ 'a', 1, 'x', undef, 'q' ],
+            [ 'b', 2, 'y', undef, 'r' ],
+            [ 'c', 3, 'z', undef, 's' ],
         ],
         value       => [qw/q r s/],
-        description => 'Add a new value below the bottom'
+        description => 'Add a new value below the right'
+    },
+    {   indices => [1],
+        test_against =>
+          [ [ 'a', 'q', 'x' ], [ 'b', 'r', 'y' ], [ 'c', undef, 'z' ], ],
+        value       => [qw/q r/],
+        description => 'Replace a column with a shorter column'
+    },
+    {   indices => [1],
+        test_against =>
+          [ [ 'a', 'q', 'x' ], [ 'b', undef, 'y' ], [ 'c', 's', 'z' ], ],
+        value => [ 'q', undef, 's' ],
+        description => 'Replace a column with one with an undefined value'
+    },
+    {   indices      => [1],
+        test_against => [
+            [ 'a',   'q', 'x' ],
+            [ 'b',   'r', 'y' ],
+            [ 'c',   's', 'z' ],
+            [ undef, 't' ],
+        ],
+        value       => [qw/q r s t/],
+        description => 'Replace a column with a longer column'
+    },
+
+    {   indices => [-2],
+        test_against =>
+          [ [ 'a', 'q', 'x' ], [ 'b', 'r', 'y' ], [ 'c', undef, 'z' ], ],
+        value       => [qw/q r/],
+        description => 'Replace a column with a shorter column (negative index)'
+    },
+    {   indices => [-2],
+        test_against =>
+          [ [ 'a', 'q', 'x' ], [ 'b', undef, 'y' ], [ 'c', 's', 'z' ], ],
+        value => [ 'q', undef, 's' ],
+        description =>
+          'Replace column with one with undefined value (negative index)'
+    },
+    {   indices      => [-2],
+        test_against => [
+            [ 'a',   'q', 'x' ],
+            [ 'b',   'r', 'y' ],
+            [ 'c',   's', 'z' ],
+            [ undef, 't' ],
+        ],
+        value       => [qw/q r s t/],
+        description => 'Replace a column with a longer column (negative index)'
     },
 );
 
+note "Testing set_col()";
+a2dcan('set_col');
 
-    note "Testing set_col()";
-    a2dcan('set_col');
+for my $test_r (@set_col_tests) {
+    my $idx          = ${ $test_r->{indices} }[0];
+    my $test_against = $test_r->{test_against};
+    my $description  = $test_r->{description};
+    my @values       = @{ $test_r->{value} };
 
-    for my $test_r (@set_col_tests) {
-        my $idx          = ${ $test_r->{indices} }[0];
-        my $test_against = $test_r->{test_against};
-        my $description  = $test_r->{description};
-        my @values       = @{ $test_r->{value} };
+    my $sample_obj = Array::2D->clone($set_ref);
+    my $sample_ref = Array::2D->clone_unblessed($set_ref);
 
-        my $sample_obj = Array::2D->clone($set_ref);
-        my $sample_ref = Array::2D->clone_unblessed($set_ref);
+    $sample_obj->set_col( $idx, @values );
+    is_deeply( $sample_obj,
+        $test_against, "set_col: $description: sample object" );
+    is_blessed($sample_obj);
 
-        $sample_obj->set_col( $idx, @values );
-        is_deeply( $sample_obj,
-            $test_against, "set_col: $description: sample object" );
-        is_blessed($sample_obj);
-
-        Array::2D->set_col( $sample_ref, $idx, @values );
-        is_deeply( $sample_ref,
-            $test_against, "set_col: $description: sample reference" );
-        isnt_blessed($sample_ref);
-    }
+    Array::2D->set_col( $sample_ref, $idx, @values );
+    is_deeply( $sample_ref,
+        $test_against, "set_col: $description: sample reference" );
+    isnt_blessed($sample_ref);
+}
 
 {
     my $sample_die_obj = Array::2D->clone($set_ref);
@@ -310,7 +365,7 @@ my @set_col_tests = (
         '$obj->set_col dies with invalid negative indices' );
     like(
         $exception_obj,
-        qr/Modification of non-creatable array value/,
+        qr/negative index off the beginning of the array/,
         "... and it's the expected exception",
     );
 
@@ -321,7 +376,7 @@ my @set_col_tests = (
         'set_col($ref) dies with invalid negative indices' );
     like(
         $exception_ref,
-        qr/Modification of non-creatable array value/,
+        qr/negative index off the beginning of the array/,
         "... and it's the expected exception",
     );
 }

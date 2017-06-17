@@ -20,6 +20,6 @@ a2dcan('trim_right');
 
 note 'Testing define()';
 a2dcan('define');
-# low
+# high
 
 done_testing;
