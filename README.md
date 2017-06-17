@@ -84,9 +84,9 @@ be valid:
 The columns would be returned as (undef, 3, 4), (1, undef, 6), and (2). 
 
 The `prune()` method will eliminate excess padding.  The `pad()` method
-will pad out the object to the highest row and column with a defined value.
+will pad out the array to the highest row and column with a defined value.
 
-(Padding state is not guaranteed to be consistent because the object
+(Padding state is not guaranteed to be consistent because the array
 is designed to allow standard Perl constructs to apply to it, and those
 do not preserve padding state.)
 
@@ -94,10 +94,23 @@ do not preserve padding state.)
 
 Some general notes:
 
+- Except for constructor methods, all methods can be called as an object 
+method on a blessed Array::2D object:
+
+        $self->clone();
+
+    Or as a class method, if one supplies the array of arrays as the first
+    argument:
+
+        Array::2D->clone($self);
+
+    In the latter case, the array of arrays need not be blessed (and will not 
+    be blessed by Array::2D).
+
 - In all cases where an array of arrays is specified as an argument 
 (_aoa\_ref_), this can be either an Array::2D object or a regular  
 array of arrays data structure that is not an object. 
-- Where rows are columns are removed from the object (as with any of the 
+- Where rows are columns are removed from the array (as with any of the 
 `pop_*`, `shift_*`, `del_*` methods), time-consuming assemblage of
 return values is ommitted in void context.
 - Some care is taken to ensure that rows are not autovivified.  Normally, if the 
@@ -108,11 +121,19 @@ This is the only advantage of methods like `element`, `row`, etc. compared
 to regular Perl constructions.
 - It is assumed that row and column indexes passed to the methods are integers.
 If they are negative, they will count from the end instead of
-the beginning, as in regular Perl array subscripts.  The behavior of the module
-when anything else is passed in (strings, undef, floats, NaN, objects, etc.) is 
-unspecified. Don't do that.
+the beginning, as in regular Perl array subscripts.  Specifying a negative
+index that is off the beginning of the array (e.g., specifying column -6 
+on an array whose width is 5) will cause an exception to be thrown.
+This is different than specifying an index is off the end of the array -- 
+reading column #5 of a three-column array will return an empty column,
+and trying to write to tha column will pad out the intervening columns 
+with undefined values.
 
-## CLASS METHODS
+    The behavior of the module when anything other than an integer is
+    passed in (strings, undef, floats, NaN, objects, etc.) is unspecified.
+    Don't do that.
+
+## BASIC CONSTRUCTOR METHODS
 
 - **new( _row\_ref, row\_ref..._)**
 - **new( _aoa\_ref_ )**
@@ -164,6 +185,7 @@ unspecified. Don't do that.
           [ g, h, i] ,
           [ j ],
         ]
+        
 
 - **new\_down(_chunksize, element, element, ..._)**
 
@@ -180,6 +202,7 @@ unspecified. Don't do that.
           [ b, e, h ] ,
           [ c, f, i ] ,
         ]
+        
 
 - **new\_to\_term\_width (...)**
 
@@ -192,29 +215,44 @@ unspecified. Don't do that.
 
     - separator => _separator_
 
-        A scalar to be passed to ->tabulate\_equal\_width(). The default is a single space.
+        A scalar to be passed to ->tabulate\_equal\_width(). The default is
+        a single space.
 
     - width => _width_
 
         The width of the terminal. If not specified, defaults to 80.
 
-    The method determines the number of columns required, creates an
-    Array::2D object of that number of columns using new\_down, and
-    then returns first the object and then the results of ->tabulate\_equal\_width() on
-    that object.
+    The method determines the number of text columns required, creates an
+    Array::2D object of that number of text columns using new\_down, and then
+    returns first the object and then the results of ->tabulate\_equal\_width()
+    on that object.
+
+    See [Tabulating into Columnar Output](#tabulating-into-columnar-output) 
+    below for information on how the widths of text in text columns 
+    are determined.
 
 - **new\_from\_tsv(_tsv\_string, tsv\_string..._)**
 
-    Returns a new object from a string containing tab-delimited values. 
+    Returns a new object from a string containing tab-separated values. 
     The string is first split into lines (delimited by carriage returns,
     line feeds, a CR/LF pair, or other characters matching Perl's \\R) and
     then split into values by tabs.
 
     If multiple strings are provided, they will be considered additional
-    lines. So, one can pass the contents of an entire TSV file, the series
-    of lines in the TSV file, or a combination of two.
+    lines. So, if one has already read a TSV file, one can pass the entire contents, 
+    the series of lines in the TSV file, or a combination of two.
+
+    Note that this is not a routine that reads TSV _files_, just TSV
+    _strings_, which may or may not have been read from a file. See
+    `[new_from_file](https://metacpan.org/pod/new_from_file)()` for a method that reads TSV
+    files (and other kinds).
+
+## CONSTRUCTOR METHODS THAT READ FILES
 
 - **new\_from\_xlsx(_xlsx\_filespec, sheet\_requested_)**
+
+    This method requires that [Spreadsheet::ParseXLSX](https://metacpan.org/pod/Spreadsheet::ParseXLSX)
+    be installed on the local system.
 
     Returns a new object from a worksheet in an Excel XLSX file, consisting
     of the rows and columns of that sheet. The _sheet\_requested_ parameter
@@ -222,30 +260,32 @@ unspecified. Don't do that.
     `Spreadsheet::ParseXLSX`, which accepts a name or an index. If nothing
     is passed, it requests sheet 0 (the first sheet).
 
-- **new\_from\_file(_filespec_)**
+- **new\_from\_file(_filespec_, _filetype_)**
 
-    Returns a new object from a file on disk. If the file has the extension
-    .xlsx, passes that file to `new_from_xlsx`. If the file has the
-    extension .txt, .tab, or .tsv, slurps the file in memory and passes the
-    result to `new_from_tsv`.
+    Returns a new object from a file on disk, specified as _filespec_.
 
-    (Future versions might accept CSV files as well, and test the contents
-    of .txt files to see whether they are comma-delimited or
-    tab-delimited.)
+    If _filetype_ is present, then it must be either 'xlsx' or 'tsv', and it
+    will read the file assuming it is of that type.
 
-## CLASS/OBJECT METHODS
+    If no _filetype_ is present, it will attempt to use the file's 
+    extension to determine the proper filetype. Any file whose extension is
+    '.xlsx' will be treated as type 'xlsx', and any file whose extension is
+    either '.tab' or '.tsv' will be treated as type 'tsv'.
 
-All class/object methods can be called as an object method on a blessed
-Array::2D object:
+    For the moment, it will also assume that a file whose extension is '.txt'
+    is of type 'tsv'. It should be assumed that future versions
+    may attempt to determine whether the file is more likely to be a comma-separated
+    values file instead. To ensure that the file will be treated as tab-separated,
+    pass in a filetype explicitly.
 
-    $self->clone();
+    If the file type is 'xlsx', this method
+    passes that file on to `new_from_xlsx()` and requests the first worksheet. 
 
-Or as a class method, if one supplies the array of arrays as the first
-argument:
+    If the file type is 'tsv', 
+    it slurps the file in memory and passes the result to `new_from_tsv`.
+    This uses [File::Slurper](https://metacpan.org/pod/File::Slurper), which mus be installed on the system.
 
-    Array::2D->clone($self);
-
-In the latter case, the array of arrays need not be blessed.
+## COPYING AND REARRANGING ARRAYS
 
 - **clone()**
 
@@ -290,29 +330,47 @@ In the latter case, the array of arrays need not be blessed.
     the  2D array are themselves references, they will refer to the same
     things as in the original 2D array.
 
+- **transpose()**
+
+    Transposes the array: the elements that used to be
+    in rows are now in columns, and vice versa.
+
+    In void context, alters the original. Otherwise, creates a new
+    Array::2D object and returns that.
+
+- **flattened()**
+
+    Returns the array as a single, one-dimensional flat list. Note that
+    it does not flatten any arrayrefs that are deep inside the 2D structure --
+    just the rows and columns of the structure itself.
+
+## DIMENSIONS OF THE ARRAY
+
 - **is\_empty()**
 
-    Returns a true value if the object is empty, false otherwise.
+    Returns a true value if the array is empty, false otherwise.
 
 - **height()**
 
-    Returns the number of rows in the object.  
+    Returns the number of rows in the array.  The same as `scalar @$array`.
 
 - **width()**
 
-    Returns the number of columns in the object. (The number of elements in
+    Returns the number of columns in the array. (The number of elements in
     the longest row.)
 
 - **last\_row()**
 
-    Returns the index of the last row of the object.  If the object is
-    empty, returns -1.
+    Returns the index of the last row of the array.  If the array is
+    empty, returns -1. The same as `$#{$array}`.
 
 - **last\_col()**
 
-    Returns the index of the last column of the object. (The index of the
-    last element in the longest row.) If the object is
+    Returns the index of the last column of the array. (The index of the
+    last element in the longest row.) If the array is
     empty, returns -1.
+
+## READING ELEMENTS, ROWS, COLUMNS, SLICES
 
 - **element(_row\_idx, col\_idx_)**
 
@@ -356,18 +414,24 @@ In the latter case, the array of arrays need not be blessed.
 
 - **slice(_row\_idx\_from, col\_idx\_to, col\_idx\_from, col\_idx\_to_)**
 
-    Takes a two-dimensional slice of the object; like cutting a rectangle
-    out of the object.
+    Takes a two-dimensional slice of the array; like cutting a rectangle
+    out of the array.
 
-    In void context, alters the original object, which then will contain
+    In void context, alters the original array, which then will contain
     only the area specified; otherwise, creates a new Array::2D 
     object and returns the object.
 
     Negative indicies are treated as though they mean that many from the end:
     the last item is -1, the second-to-last is -2, and so on. 
 
-    Slices are always returned in the order of the original object, so 
+    Slices are always returned in the order of the original array, so 
     $obj->slice(0,1,0,1) is the same as $obj->slice(1,0,1,0).
+
+## SETTING ELEMENTS, ROWS, COLUMNS, SLICES
+
+None of these methods return anything. At some point it might
+be worthwhile to have them return the old values of whatever they changed
+(when not called in void context), but they don't do that yet.
 
 - **set\_element(_row\_idx, col\_idx, value_)**
 
@@ -397,6 +461,8 @@ In the latter case, the array of arrays need not be blessed.
     The arguments after _start\_row\_idx_ are passed to `new()`, so it accepts
     any of the arguments that `new()` accepts.
 
+    Returns the height of the array.
+
 - **set\_cols(_start\_col\_idx, col\_ref, col\_ref_...)**
 
     Sets the columns starting at the given start column index to the columns given.
@@ -412,25 +478,53 @@ In the latter case, the array of arrays need not be blessed.
     The arguments after the row and columns are passed to `new()`, so it accepts
     any of the arguments that `new()` accepts.
 
-- **shift\_row()**
+## INSERTING ROWS AND COLUMNS
 
-    Removes the first row of the object and returns a list  of the elements
-    of that row.
+All these methods return the new number of either rows or columns.
 
-- **shift\_col()**
+- **ins\_row(_row\_idx, element, element..._)**
 
-    Removes the first column of the object and returns a list of the
-    elements of that column.
+    Adds the specified elements as a new row at the given index. 
 
-- **pop\_row()**
+- **ins\_col(_col\_idx, element, element..._)**
 
-    Removes the last row of the object and returns a list of the elements
-    of that row.
+    Adds the specified elements as a new column at the given index. 
 
-- **pop\_col()**
+- **ins\_rows(_row\_idx, aoa\_ref_)**
 
-    Removes the last column of the object and returns  a list of the
-    elements of that column.
+    Takes the specified array of arrays and inserts them as new rows at the
+    given index.  
+
+    The arguments after the row index are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
+- **ins\_cols(_col\_idx, col\_ref, col\_ref..._)**
+
+    Takes the specified array of arrays and inserts them as new columns at
+    the given index.  
+
+- **unshift\_row(_element, element..._)**
+
+    Adds the specified elements as the new first row. 
+
+- **unshift\_col(_element, element..._)**
+
+    Adds the specified elements as the new first column. 
+
+- **unshift\_rows(_aoa\_ref_)**
+- **unshift\_rows(_row\_ref, row\_ref..._)**
+
+    Takes the specified array of arrays and adds them as new rows before
+    the beginning of the existing rows. Returns the new number of rows.
+
+    The arguments are passed to `new()`, so it accepts
+    any of the arguments that `new()` accepts.
+
+- **unshift\_cols(_col\_ref, col\_ref..._)**
+
+    Takes the specified array of arrays and adds them as new columns,
+    before the beginning of the existing columns. Returns the new number of
+    columns.
 
 - **push\_row(_element, element..._)**
 
@@ -456,53 +550,7 @@ In the latter case, the array of arrays need not be blessed.
     Takes the specified array of arrays and adds them as new columns, after
     the end of the existing columns. Returns the new number of columns.
 
-- **unshift\_row(_element, element..._)**
-
-    Adds the specified elements as the new first row. Returns the new 
-    number of rows.
-
-- **unshift\_col(_element, element..._)**
-
-    Adds the specified elements as the new first column. Returns the new 
-    number of columns.
-
-- **unshift\_rows(_aoa\_ref_)**
-- **unshift\_rows(_row\_ref, row\_ref..._)**
-
-    Takes the specified array of arrays and adds them as new rows before
-    the beginning of the existing rows. Returns the new number of rows.
-
-    The arguments are passed to `new()`, so it accepts
-    any of the arguments that `new()` accepts.
-
-- **unshift\_cols(_col\_ref, col\_ref..._)**
-
-    Takes the specified array of arrays and adds them as new columns,
-    before the beginning of the existing columns. Returns the new number of
-    columns.
-
-- **ins\_row(_row\_idx, element, element..._)**
-
-    Adds the specified elements as a new row at the given index. Returns
-    the new number of rows.
-
-- **ins\_col(_col\_idx, element, element..._)**
-
-    Adds the specified elements as a new column at the given index. Returns
-    the new number of columns.
-
-- **ins\_rows(_row\_idx, aoa\_ref_)**
-
-    Takes the specified array of arrays and inserts them as new rows at the
-    given index.  Returns the new number of rows.
-
-    The arguments after the row index are passed to `new()`, so it accepts
-    any of the arguments that `new()` accepts.
-
-- **ins\_cols(_col\_idx, col\_ref, col\_ref..._)**
-
-    Takes the specified array of arrays and inserts them as new columns at
-    the given index.  Returns the new number of columns.
+## RETRIEVING AND DELETING ROWS AND COLUMNS
 
 - **del\_row(_row\_idx_)**
 
@@ -524,13 +572,31 @@ In the latter case, the array of arrays need not be blessed.
     Removes the columns of the object specified by the indices. Returns an
     Array::2D object of those columns.
 
-- **transpose()**
+- **shift\_row()**
 
-    Transposes the object: the elements that used to be in rows are now in
-    columns, and vice versa.
+    Removes the first row of the object and returns a list  of the elements
+    of that row.
 
-    In void context, alters the original object. Otherwise, creates a new
-    Array::2D object and returns the object.
+- **shift\_col()**
+
+    Removes the first column of the object and returns a list of the
+    elements of that column.
+
+- **pop\_row()**
+
+    Removes the last row of the object and returns a list of the elements
+    of that row.
+
+- **pop\_col()**
+
+    Removes the last column of the object and returns  a list of the
+    elements of that column.
+
+## ADDING OR REMOVING PADDING
+
+Padding, here, means empty values beyond
+the last defined value of each column or row. What counts as "empty"
+depends on the method being used.
 
 - **prune()**
 
@@ -576,26 +642,35 @@ In the latter case, the array of arrays need not be blessed.
 - **prune\_callback(_code\_ref_)**
 
     Like `prune`, but calls the &lt;code\_ref> for each element, setting $\_ to
-     each element. If the callback code returns true, the value is
-    considered blank.
+    each element. If the callback code returns true, the value is
+    considered padding, and is removed if it's beyond the last non-padding
+    value at the end of a column or row.
 
     For example, this would prune values that were undefined,  the empty
     string, or zero:
 
         my $callback = sub { 
-            my $val = shift;
-            ! defined $val or $val eq q[] or $val == 0;
+            ! defined $_ or $_ eq q[] or $_ == 0;
         }
         $obj->prune_callback($callback);
 
     In void context, alters the original object. Otherwise, creates a new
     Array::2D object and returns the object.
 
+    Completely empty rows cannot be sent to the callback function,
+    so those are always removed.
+
 - **pad(_value_)**
 
     The opposite of `prune()`, this pads out the array so every column
     has the same number of elements.  If provided, the added elements are
     given the value provided; otherwise, they are set to undef.
+
+## MODIFYING EACH ELEMENT
+
+Each of these methods alters the original array in void context.
+If not in void context, creates a new Array::2D object and returns
+the object.
 
 - **apply(_coderef_)**
 
@@ -610,9 +685,6 @@ In the latter case, the array of arrays need not be blessed.
     If an entry in the array is undefined, it will still be passed to the
     callback.
 
-    In void context, alters the original object. Otherwise, creates a new
-    Array::2D object and returns the object.
-
     For each invocation of the callback, @\_ is set to the row and column
     indexes (0-based).
 
@@ -620,9 +692,6 @@ In the latter case, the array of arrays need not be blessed.
 
     Removes white space, if present, from the beginning and end  of each
     element in the array.
-
-    In void context, alters the original object. Otherwise, creates a new
-    Array::2D object and returns the object.
 
 - **trim\_right()**
 
@@ -635,13 +704,13 @@ In the latter case, the array of arrays need not be blessed.
 
     Replaces undefined values with the empty string.
 
-    In void context, alters the original object. Otherwise, creates a new
-    Array::2D object and returns the object.
+## TRANSFORMING ARRAYS INTO OTHER STRUCTURES
 
 - **hash\_of\_rows(_col\_idx_)**
 
-    Creates a hash reference.  The keys are the values in the specified
-    column of the array. The values are arrayrefs containing the elements
+    Returns a hash reference.  The values of the specified
+    column of the array become the keys of the hash. The values of the hash
+    are arrayrefs containing the elements
     of the rows of the array, with the value in the key column removed.
 
     If the key column is not specified, the first column is used for the
@@ -652,6 +721,7 @@ In the latter case, the array of arrays need not be blessed.
         $obj = Array::2D->new([qw/a 1 2/],[qw/b 3 4/]);
         $hashref = $obj->hash_of_rows(0);
         # $hashref = { a => [ '1' , '2' ]  , b => [ '3' , '4' ] }
+        
 
 - **hash\_of\_row\_elements(_key\_column\_idx, value\_column\_idx_)**
 
@@ -673,6 +743,14 @@ In the latter case, the array of arrays need not be blessed.
     will be used as the value; otherwise column 0 will be used as the
     value.)
 
+## TABULATING INTO COLUMNAR OUTPUT
+
+If the `Unicode::GCString|Unicode::GCString` module can be loaded,
+its `columns` method will be used to determine the width of each
+character. This will treat composed accented characters and
+double-width Asian characters correctly. Otherwise, it will 
+use Perl's `length` function.
+
 - **tabulate(_separator_)**
 
     Returns an arrayref of strings, where each string consists of the
@@ -688,12 +766,8 @@ In the latter case, the array of arrays need not be blessed.
         $arrayref = $obj->tabulate();
 
         # $arrayref = [ 'a    bbb cc' ,
-                        'dddd e   f'] ;
-
-    If the `Unicode::GCString|Unicode::GCString` module can be loaded,
-    its `columns` method will be used to determine the width of each
-    character. This will treat composed accented characters and
-    double-width Asian characters correctly.
+        #               'dddd e   f'
+        #             ];
 
 - **tabulated(_separator_)**
 
@@ -704,6 +778,8 @@ In the latter case, the array of arrays need not be blessed.
 
     Like `tabulate()`, but instead of each column having its own width,
     all columns have the same width.
+
+## SERIALIZING AND OUTPUT TO FILES
 
 - **tsv(_headers_)**
 
@@ -722,6 +798,38 @@ In the latter case, the array of arrays need not be blessed.
     line feeds (U+240A), or carriage returns (U+240D). This generates a
     warning.  (In the future, this may change to the Replacement Character, 
     U+FFFD.)
+
+- **&lt;file(...) **>
+
+    Accepts a file specification and creates a new file at that  location
+    containing the data in the 2D array.
+
+    This method uses named parameters.
+
+    - type
+
+        This parameter is the file's type. Currently, the types recognized are
+        'tsv' for tab-separated values, and 'xlsx' for Excel XLSX. If the type
+        is not given, it attempts to determine the type from the file
+        extension, which can be (case-insensitively) 'xlsx' for Excel XLSX
+        files  or 'tab', 'tsv' or 'txt' for tab-separated value files.
+
+        (If other text file formats are someday added, either they will have
+        to have different extensions, or an explicit type must be passed
+        to force that type to have a ".txt" extension.
+
+    - output\_file
+
+        This mandatory parameter contains the file specification.
+
+    - headers
+
+        This parameter is optional. If present, it contains an array reference
+        to be used as the first row in the ouptut file.
+
+        The idea is that these will be the headers of the columns. It's not
+        really any different than putting the column headers as the first
+        element of the data, but frequently these are stored separately.
 
 - **xlsx(...)**
 
@@ -749,36 +857,6 @@ In the latter case, the array of arrays need not be blessed.
         This parameter is optional. If present, it contains a hash reference,
         with format parameters as specified by Excel::Writer::XLSX.
 
-- **&lt;file(...) **>
-
-    Accepts a file specification and creates a new file at that  location
-    containing the data in the 2D array.
-
-    This method uses named parameters.
-
-    - type
-
-        This parameter is the file's type. Currently, the types recognized are
-        'tsv' for tab-separated values, and 'xlsx' for Excel XLSX. If the type
-        is not given, it attempts to determine the type from the file
-        extension, which can be (case-insensitively) 'xlsx' for Excel XLSX
-        files  or 'tab', 'tsv' or 'txt' for  tab-separated value files.
-
-    - output\_file
-
-        This mandatory parameter contains the file specification.
-
-    - headers
-
-        This parameter is optional. If present, it contains an array reference
-        to be used as the first row in the ouptut file.
-
-        The idea is that these will be the headers of the columns. It's not
-        really any different than putting the column headers as the first
-        element of the data, but frequently these are stored separately.
-
-    - type
-
 # DIAGNOSTICS
 
 ## ERRORS
@@ -803,6 +881,12 @@ In the latter case, the array of arrays need not be blessed.
 
     No filename, or a blank filename, was passed to these methods.
 
+- No array passed to ...
+
+    A method was called that requires an array, but there was no array 
+    passed in the argument list. Typically this would be when it was called
+    as a class object, e.g., $class->set\_row(qw/a b c/);
+
 ## WARNINGS
 
 - Tab character found in array during Array::2D->tsv; converted to visible symbol
@@ -815,12 +899,13 @@ In the latter case, the array of arrays need not be blessed.
 
 # TO DO
 
-- Add CSV (and possibly other file type) support to new\_from\_file.
+- Add CSV (and possibly other file type) support to `new_from_file()` 
+and `file()`.
 
 # SEE ALSO
 
 The [Data::Table](https://metacpan.org/pod/Data::Table) module on CPAN provides a more conventionally
-opaque object that does many of the same things as this module.
+opaque object that does many of the same things as this module, and more.
 
 # DEPENDENCIES
 
@@ -832,7 +917,7 @@ opaque object that does many of the same things as this module.
 - Excel::Writer::XLSX
 
     The last three are required only by those methods that use them 
-    (`new_from_tsv`, `new_from_xlsx`, and `xlsx` respectively).
+    (`new_from_tsv()`, `new_from_xlsx()`, and `xlsx()` respectively).
 
 # AUTHOR
 
@@ -853,3 +938,35 @@ later version, or
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+# POD ERRORS
+
+Hey! **The above document had some coding errors, which are explained below:**
+
+- Around line 670:
+
+    &#x3d;back without =over
+
+- Around line 866:
+
+    '=item' outside of any '=over'
+
+- Around line 1254:
+
+    &#x3d;cut found outside a pod block.  Skipping to next block.
+
+- Around line 1262:
+
+    '=item' outside of any '=over'
+
+- Around line 1509:
+
+    '=item' outside of any '=over'
+
+- Around line 2169:
+
+    &#x3d;back without =over
+
+- Around line 2171:
+
+    '=item' outside of any '=over'
