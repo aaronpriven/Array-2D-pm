@@ -349,7 +349,7 @@ returns
     [ g, h, i] ,
     [ j ],
   ]
-  
+
 =cut
 
 sub new_across {
@@ -384,7 +384,7 @@ returns
     [ b, e, h ] ,
     [ c, f, i ] ,
   ]
-  
+
 =cut
 
 sub new_down {
@@ -595,8 +595,6 @@ If the file type is 'tsv',
 it slurps the file in memory and passes the result to C<new_from_tsv>.
 This uses L<File::Slurper|File::Slurper>, which mus be installed on the system.
 
-=back
-
 =cut
 
 my $filetype_from_ext_r = sub {
@@ -660,9 +658,8 @@ my $invocant_cr = sub {
     # invocant is an object blessed into the $blessing class
 
     my $object = shift;
-    return ( $invocant, $object ) if defined $object;
+    return ( $invocant, $object ) if is_arrayref($object);
     # invocant is a class
-
     croak 'No array passed to ' . ( caller(1) )[3];
 
 };
@@ -862,6 +859,8 @@ sub last_col {
 =back
 
 =head2 READING ELEMENTS, ROWS, COLUMNS, SLICES
+
+=over
 
 =item B<element(I<row_idx, col_idx>)>
 
@@ -1251,13 +1250,13 @@ sub set_slice {
 
 } ## tidy end: sub set_slice
 
-=cut
-
 =back
 
 =head2 INSERTING ROWS AND COLUMNS
 
 All these methods return the new number of either rows or columns.
+
+=over
 
 =item B<ins_row(I<row_idx, element, element...>)>
 
@@ -1505,6 +1504,8 @@ sub push_cols {
 =back
 
 =head2 RETRIEVING AND DELETING ROWS AND COLUMNS
+
+=over
 
 =item B<del_row(I<row_idx>)>
 
@@ -1968,7 +1969,7 @@ So:
  $obj = Array::2D->new([qw/a 1 2/],[qw/b 3 4/]);
  $hashref = $obj->hash_of_rows(0);
  # $hashref = { a => [ '1' , '2' ]  , b => [ '3' , '4' ] }
- 
+
 =cut
 
 sub hash_of_rows {
@@ -2166,7 +2167,7 @@ sub tabulate_equal_width {
 
 =head2 SERIALIZING AND OUTPUT TO FILES
 
-=back
+=over
 
 =item B<< tsv(I<headers>) >>
 

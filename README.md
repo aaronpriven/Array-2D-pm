@@ -185,7 +185,6 @@ with undefined values.
           [ g, h, i] ,
           [ j ],
         ]
-        
 
 - **new\_down(_chunksize, element, element, ..._)**
 
@@ -202,7 +201,6 @@ with undefined values.
           [ b, e, h ] ,
           [ c, f, i ] ,
         ]
-        
 
 - **new\_to\_term\_width (...)**
 
@@ -721,7 +719,6 @@ the object.
         $obj = Array::2D->new([qw/a 1 2/],[qw/b 3 4/]);
         $hashref = $obj->hash_of_rows(0);
         # $hashref = { a => [ '1' , '2' ]  , b => [ '3' , '4' ] }
-        
 
 - **hash\_of\_row\_elements(_key\_column\_idx, value\_column\_idx_)**
 
@@ -938,35 +935,3 @@ later version, or
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-# POD ERRORS
-
-Hey! **The above document had some coding errors, which are explained below:**
-
-- Around line 670:
-
-    &#x3d;back without =over
-
-- Around line 866:
-
-    '=item' outside of any '=over'
-
-- Around line 1254:
-
-    &#x3d;cut found outside a pod block.  Skipping to next block.
-
-- Around line 1262:
-
-    '=item' outside of any '=over'
-
-- Around line 1509:
-
-    '=item' outside of any '=over'
-
-- Around line 2169:
-
-    &#x3d;back without =over
-
-- Around line 2171:
-
-    '=item' outside of any '=over'
