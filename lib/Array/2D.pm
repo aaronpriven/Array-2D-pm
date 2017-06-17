@@ -123,6 +123,10 @@ BEGIN {
 
     if ( !$impl && eval { require Ref::Util; 1 } ) {
         Ref::Util->import(qw/is_arrayref is_plain_arrayref/);
+        # There is a possibility that Ref::Util will change the meaning
+        # of is_arrayref to "is_plain_arrayref" and create a new
+        # is_any_arrayref that means what is_arrayref means now.
+        # Changes will have to be made in that event.
     }
     else {
         *is_plain_arrayref = sub { ref( $_[0] ) eq 'ARRAY' };
@@ -180,7 +184,7 @@ method on a blessed Array::2D object:
 Or as a class method, if one supplies the array of arrays as the first
 argument:
 
-  Array::2D->clone($self);
+  Array::2D->clone($array);
 
 In the latter case, the array of arrays need not be blessed (and will not 
 be blessed by Array::2D).
