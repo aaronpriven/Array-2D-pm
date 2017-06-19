@@ -9,6 +9,9 @@ BEGIN {
 our ( $sample_obj,  $sample_ref,  $empty_obj,   $empty_ref );
 our ( $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref );
 
+my $one_element_obj = Array::2D->bless([['x']]);
+my $one_element_ref = [['x']];
+
 # you know my @methods, Watson
 my @methods = (qw/height width last_row last_col/);
 
@@ -17,6 +20,7 @@ my @subjects = (
     [ 'one-row',    $one_row_obj, $one_row_ref, 1,  5 ],
     [ 'one-column', $one_col_obj, $one_col_ref, 10, 1 ],
     [ 'empty',      $empty_obj,   $empty_ref,   0,  0 ],
+    [ 'one-element', $one_element_obj, $one_element_ref, 1, 1 ],
 );
 
 plan tests => ( @methods + 1 ) * ( @subjects * 2 + 1 );
