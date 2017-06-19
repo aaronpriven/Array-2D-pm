@@ -16,7 +16,6 @@ a2dcan('ins_row');
 
 note 'Testing ins_col()';
 a2dcan('ins_col');
-# high priority
 
 my @ins_col_tests = (
     {   indices      => [0],

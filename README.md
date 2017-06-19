@@ -102,7 +102,7 @@ method on a blessed Array::2D object:
     Or as a class method, if one supplies the array of arrays as the first
     argument:
 
-        Array::2D->clone($self);
+        Array::2D->clone($array);
 
     In the latter case, the array of arrays need not be blessed (and will not 
     be blessed by Array::2D).
