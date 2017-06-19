@@ -460,7 +460,7 @@ for my $test_r (@slice_tests) {
     my $ref_to_test = Array::2D->clone_unblessed($sample_ref);
     Array::2D->slice( $ref_to_test, @$indices );
     is_deeply( $ref_to_test,
-        $expected_results, "Sliced in place: $description: sample reference" );
+        $expected_results, "Sliced in place: $description: reference" );
     isnt_blessed($ref_to_test);
 
 } ## tidy end: for my $test_r (@slice_tests)
