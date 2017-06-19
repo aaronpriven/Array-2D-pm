@@ -6,11 +6,9 @@ BEGIN {
       // die "Can't load array-2d.pl";
 }
 
-note 'Testing transpose()';
 a2dcan('transpose');
 # low
 
-note 'Testing flattened()';
 a2dcan('flattened');
 # high
 

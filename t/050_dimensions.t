@@ -26,8 +26,6 @@ my @subjects = (
 plan tests => ( @methods + 1 ) * ( @subjects * 2 + 1 );
 # add one method for is_empty and one subject for test_can
 
-note "Testing is_empty()";
-
 a2dcan('is_empty');
 
 foreach my $subject_r (@subjects) {
@@ -49,7 +47,6 @@ foreach my $subject_r (@subjects) {
 foreach my $method_idx ( 0 .. $#methods ) {
     my $method = $methods[$method_idx];
 
-    note "Testing $method()";
     a2dcan($method);
 
     foreach my $subject_r (@subjects) {

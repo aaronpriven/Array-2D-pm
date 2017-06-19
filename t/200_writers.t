@@ -10,7 +10,6 @@ use Test::Fatal;
 
 my $set_ref = [ [ 'a', 1, 'x' ], [ 'b', 2, 'y' ], [ 'c', 3, 'z' ], ];
 
-note 'Testing set_element()';
 a2dcan('set_element');
 
 my @element_tests = (
@@ -86,7 +85,6 @@ for my $test_r (@element_tests) {
         $test_against, "Set element: $description: sample reference" );
     isnt_blessed($sample_ref);
 
-    #note explain $sample_ref;
 
 } ## tidy end: for my $test_r (@element_tests)
 
@@ -197,7 +195,6 @@ my @set_row_tests = (
 
 );
 
-note "Testing set_row()";
 a2dcan('set_row');
 
 for my $test_r (@set_row_tests) {
@@ -331,7 +328,6 @@ my @set_col_tests = (
     },
 );
 
-note "Testing set_col()";
 a2dcan('set_col');
 
 for my $test_r (@set_col_tests) {
@@ -381,15 +377,12 @@ for my $test_r (@set_col_tests) {
     );
 }
 
-note 'Testing set_rows()';
 a2dcan('set_rows');
 # low priority
 
-note 'Testing set_cols()';
 a2dcan('set_cols');
 # low priority
 
-note 'Testing set_slice()';
 a2dcan('set_slice');
 # low priority
 

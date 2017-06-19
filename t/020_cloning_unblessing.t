@@ -12,7 +12,6 @@ plan( tests => 25 );
 ##########
 # ->clone
 
-note 'Testing clone()';
 a2dcan('clone');
 
 my $clone_from_ref = Array::2D->clone($sample_ref);
@@ -39,7 +38,6 @@ ok( all_row_refs_are_different( $clone_from_obj, $sample_ref ),
 ##############
 # ->unblessed
 
-note 'Testing unblessed()';
 a2dcan('unblessed');
 
 my $unblessed_from_ref = Array::2D->unblessed($sample_ref);
@@ -59,7 +57,6 @@ cmp_ok( $unblessed_from_obj, '!=', $sample_obj,
 ####################
 # ->clone_unblessed
 
-note 'Testing clone_unblessed()';
 a2dcan('clone_unblessed');
 
 my $unblessedclone_from_ref = Array::2D->clone_unblessed($sample_ref);

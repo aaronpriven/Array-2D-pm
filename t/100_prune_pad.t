@@ -8,7 +8,7 @@ BEGIN {
 
 plan tests => 65;
 
-# Prune_* is tested before the readers because rows() and cols() depend on 
+# Prune_* is tested before the readers because rows() and cols() depend on
 # prune()
 
 # similarly, prune_callback is tested before the other prunes because
@@ -16,11 +16,10 @@ plan tests => 65;
 
 my $prune_test = [ [ 1, 2 ], [3], [ 4, 5, 6 ] ];
 
-note 'Testing prune_callback()';
 a2dcan('prune_callback');
 
 my $obj_to_prunecallback = Array::2D->new(
-    [ 1, 2,     ' ', '' ],
+    [ 1, 2, ' ', '' ],
     [ 3, undef, 'z' ],
     [ 4, 5,     6 ],
     [], ["\n"]
@@ -60,7 +59,6 @@ is_deeply( $ref_to_prunecallback, $prune_test,
     'Prune-callbackd reference in place' );
 isnt_blessed($ref_to_prunecallback);
 
-note 'Testing prune()';
 a2dcan('prune');
 
 my $obj_to_prune
@@ -69,7 +67,6 @@ my $obj_to_prune
 my $ref_to_prune = [ [ 1, 2, undef ], [ 3, undef ], [ 4, 5, 6 ], [] ];
 
 my $prune_unchanged = [ [ 1, 2, undef ], [ 3, undef ], [ 4, 5, 6 ], [] ];
-
 
 my $prune_obj_results = $obj_to_prune->prune();
 is_deeply( $prune_obj_results, $prune_test, 'Got pruned from object' );
@@ -91,7 +88,7 @@ Array::2D->prune($ref_to_prune);
 is_deeply( $ref_to_prune, $prune_test, 'Pruned reference in place' );
 isnt_blessed($ref_to_prune);
 
-note 'Testing prune_empty()';
+a2dcan('prune_empty');
 
 my $obj_to_pruneempty
   = Array::2D->new( [ 1, 2, '' ], [ 3, undef ], [ 4, 5, 6 ], [], [''] );
@@ -101,8 +98,6 @@ my $ref_to_pruneempty
 
 my $pruneempty_unchanged
   = [ [ 1, 2, '' ], [ 3, undef ], [ 4, 5, 6 ], [], [''] ];
-
-a2dcan('prune_empty');
 
 my $pruneempty_obj_results = $obj_to_pruneempty->prune_empty();
 is_deeply( $pruneempty_obj_results, $prune_test,
@@ -126,8 +121,6 @@ Array::2D->prune_empty($ref_to_pruneempty);
 is_deeply( $ref_to_pruneempty, $prune_test,
     'Prune-emptied reference in place' );
 isnt_blessed($ref_to_pruneempty);
-
-note 'Testing prune_space()';
 
 a2dcan('prune_space');
 
@@ -161,10 +154,6 @@ is_blessed($obj_to_prunespace);
 Array::2D->prune_space($ref_to_prunespace);
 is_deeply( $ref_to_prunespace, $prune_test, 'Prune-spaced reference in place' );
 isnt_blessed($ref_to_prunespace);
-
-
-
-note 'Testing pad()';
 
 a2dcan('pad');
 
