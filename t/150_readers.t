@@ -6,16 +6,9 @@ BEGIN {
       // die "Can't load array-2d.pl";
 }
 
-our ( $sample_obj,            $sample_ref,            $sample_test );
-our ( $sample_transposed_obj, $sample_transposed_ref, $sample_transposed_test );
-our ( $empty_obj,             $empty_ref );
-our ( $one_row_ref,           $one_row_test );
-our ( $one_col_ref,           $one_col_test );
-
-#plan tests => 433;
-
-note 'Testing element()';
-a2dcan('element');
+our $sample_ref;
+our ( $one_row_ref, $one_row_test );
+our ( $one_col_ref, $one_col_test );
 
 my @element_tests = (
     [ 0,  0,  'Fetched top left element',                'Joshua' ],
@@ -33,42 +26,8 @@ my @element_tests = (
     [ 0,   0,  'Fetched element from one-element array', 'x', [ ['x'] ], ],
     [ 0,   1,  'Fetched element from one-row array', 'x', [ [ 1, 'x' ] ], ],
     [ 1,   0,  'Fetched element from one-column array', 'x', [ [1], ['x'] ], ],
+    [ 1, 1, 'Fetched nonexistent element from empty object', undef, [], ],
 );
-
-for my $test_r (@element_tests) {
-    my ( $row, $col, $description, $value, $array_test ) = @$test_r;
-
-    my ( $obj_to_test, $ref_to_test );
-
-    if ($array_test) {
-        $ref_to_test = Array::2D->clone_unblessed($array_test);
-        $obj_to_test = Array::2D->clone($array_test);
-    }
-    else {
-        $array_test  = $sample_test;
-        $obj_to_test = $sample_obj;
-        $ref_to_test = $sample_ref;
-    }
-
-    is( $obj_to_test->element( $row, $col ),
-        $value, "$description: sample object" );
-    is_deeply( $obj_to_test, $array_test,
-        '... and it did not alter the object' );
-    is( Array::2D->element( $ref_to_test, $row, $col ),
-        $value, "$description: sample reference" );
-    is_deeply( $ref_to_test, $array_test,
-        '... and it did not alter the reference' );
-} ## tidy end: for my $test_r (@element_tests)
-
-is( $empty_obj->element( 1, 1 ),
-    undef, 'Fetched nonexistent element from empty object' );
-is_deeply( $empty_obj, [], '... and it did not alter the object' );
-is( Array::2D->element( $empty_ref, 1, 1 ),
-    undef, 'Fetched nonexistent element from empty object' );
-is_deeply( $empty_ref, [], '... and it did not alter the reference' );
-
-note 'Testing row()';
-a2dcan('row');
 
 my @row_tests = (
     [   0,
@@ -91,42 +50,6 @@ my @row_tests = (
     [ 0, $one_row_test, 'row from one-row array', $one_row_ref ],
     [ 1, ['Helvetica'], 'row from one-column array', $one_col_ref ],
 );
-
-# row returns a list, so we have to create anonymous arrayref to test
-for my $test_r (@row_tests) {
-    my ( $idx, $test_against, $description, $array_test ) = @$test_r;
-
-    my ( $obj_to_test, $ref_to_test );
-
-    if ($array_test) {
-        $ref_to_test = Array::2D->clone_unblessed($array_test);
-        $obj_to_test = Array::2D->clone($array_test);
-    }
-    else {
-        $array_test  = $sample_test;
-        $obj_to_test = $sample_obj;
-        $ref_to_test = $sample_ref;
-    }
-
-    is_deeply( [ $obj_to_test->row($idx) ],
-        $test_against, "Fetched $description: sample object" );
-    is_deeply( $obj_to_test, $array_test,
-        '... and it did not alter the object' );
-    is_deeply( [ Array::2D->row( $ref_to_test, $idx ) ],
-        $test_against, "Fetched $description: sample reference" );
-    is_deeply( $ref_to_test, $array_test,
-        '... and it did not alter the reference' );
-} ## tidy end: for my $test_r (@row_tests)
-
-is_deeply( [ $empty_obj->row(1) ],
-    [], 'Fetched nonexistent row from empty object' );
-is_deeply( $empty_obj, [], '... and it did not alter the object' );
-is_deeply( [ Array::2D->row( $empty_ref, 1 ) ],
-    [], 'Fetched nonexistent row from empty reference' );
-is_deeply( $empty_ref, [], '... and it did not alter the reference' );
-
-note 'Testing col()';
-a2dcan('col');
 
 my @col_tests = (
     [   0,
@@ -162,331 +85,51 @@ my @col_tests = (
     [ 2, ['Union City'], 'column from one-row array', $one_row_ref ],
 );
 
-# col returns a list, so we have to create anonymous arrayref to test
+plan( tests => ( 4 * ( @row_tests + @col_tests + @element_tests ) + 3 ) );
+# 4 tests per entry, plus 3, one for each method
+
+sub test_reader {
+    my ( $method, $description, $indices, $expected_results, $test_array ) = @_;
+    $test_array ||= $sample_ref;
+
+    my $ref_to_test = Array::2D->clone_unblessed($test_array);
+    my $obj_to_test = Array::2D->clone($test_array);
+
+    is_deeply( [ $obj_to_test->$method(@$indices) ],
+        $expected_results, "$description: object" );
+    is_deeply( $obj_to_test, $test_array,
+        '... and it did not alter the object' );
+    is_deeply( [ Array::2D->$method( $ref_to_test, @$indices ) ],
+        $expected_results, "$description: reference" );
+    is_deeply( $ref_to_test, $test_array,
+        '... and it did not alter the reference' );
+}
+
+a2dcan('element');
+
+for my $test_r (@element_tests) {
+    my ( $row, $col, $description, $expected_results, $test_array ) = @$test_r;
+    my $indices = [ $row, $col ];
+    test_reader( 'element', $description, $indices, [$expected_results],
+        $test_array );
+}
+
+a2dcan('row');
+
+for my $test_r (@row_tests) {
+    my ( $row, $expected_results, $description, $test_array ) = @$test_r;
+    my $indices = [$row];
+    test_reader( 'row', "Fetched $description",
+        $indices, $expected_results, $test_array );
+}
+
+a2dcan('col');
+
 for my $test_r (@col_tests) {
-
-    my ( $idx, $test_against, $description, $array_test ) = @$test_r;
-
-    my ( $obj_to_test, $ref_to_test );
-
-    if ($array_test) {
-        $ref_to_test = Array::2D->clone_unblessed($array_test);
-        $obj_to_test = Array::2D->clone($array_test);
-    }
-    else {
-        $array_test  = $sample_test;
-        $obj_to_test = $sample_obj;
-        $ref_to_test = $sample_ref;
-    }
-
-    is_deeply( [ $obj_to_test->col($idx) ],
-        $test_against, "Fetched $description: sample object" );
-    is_deeply( $obj_to_test, $array_test,
-        '... and it did not alter the object' );
-    is_deeply( [ Array::2D->col( $ref_to_test, $idx ) ],
-        $test_against, "Fetched $description: sample reference" );
-    is_deeply( $ref_to_test, $array_test,
-        '... and it did not alter the reference' );
-} ## tidy end: for my $test_r (@col_tests)
-
-is_deeply( [ $empty_obj->col(1) ],
-    [], 'Fetched nonexistent column from empty object' );
-is_deeply( $empty_obj, [], '... and it did not alter the object' );
-is_deeply( [ Array::2D->col( $empty_ref, 1 ) ],
-    [], 'Fetched nonexistent column from empty reference' );
-is_deeply( $empty_ref, [], '... and it did not alter the reference' );
-
-my @rows_cols_tests = (
-    {   indices      => [ 0, 1 ],
-        test_against => [
-            [ 'Joshua',      29, 'San Mateo',     undef, 'Hannah' ],
-            [ 'Christopher', 59, 'New York City', undef, 'Alexis' ],
-        ],
-        description => 'first two',
-    },
-    {   indices      => [ 7, 8, 9 ],
-        test_against => [
-            [ 'Ashley', 57, 'Ray' ],
-            [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-            [ 'Joseph', 0,  'San Francisco' ],
-        ],
-        description => 'last three',
-    },
-    {   indices => [ 4, 5 ],
-        test_against => [ [ 'Madison', 8, 'Vallejo' ], [ 'Andrew', -15, ], ],
-        description => 'two middle',
-    },
-    {   indices      => [ -1, -2 ],
-        test_against => [
-            [ 'Joseph', 0, 'San Francisco' ],
-            [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-        ],
-        description => 'last two using negative subscripts',
-    },
-
-    {   indices      => [ 2, 8 ],
-        test_against => [
-            [ 'Emily',  25, 'Dallas',     'Aix-en-Provence', 'Michael' ],
-            [ 'Alexis', 50, 'San Carlos', undef,             'Christopher' ],
-        ],
-        description => 'Two non-adjacent',
-    },
-
-    {   indices => [ 5, 3 ],
-        test_against => [ [ 'Andrew', -15, ], [ 'Nicholas', -14, ], ],
-        description => 'Two non-adjacent, in reverse order',
-    },
-    {   indices      => [ 11, 12 ],
-        test_against => [],
-        description  => 'nonexsitent',
-    },
-    {   indices      => [ -20, -21 ],
-        test_against => [],
-        description  => 'nonexsitent, with negative subscripts',
-    },
-    {   indices      => [ 8, 9, 10 ],
-        test_against => [
-            [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-            [ 'Joseph', 0,  'San Francisco' ],
-        ],
-        description => 'range, including a nonexistent one',
-    },
-    {   indices => [ 5, 5 ],
-        test_against => [ [ 'Andrew', -15, ], [ 'Andrew', -15, ], ],
-        description => 'two duplicates',
-    },
-
-);
-
-sub test_rows_or_cols {
-
-    for my $test_r (@rows_cols_tests) {
-        my @indices      = @{ $test_r->{indices} };
-        my $test_against = $test_r->{test_against};
-        my $description  = $test_r->{description};
-
-        my $sample_obj_result = $sample_obj->rows(@indices);
-        is_deeply( $sample_obj_result,
-            $test_against, "Fetched rows: $description: sample object" );
-        is_deeply( $sample_obj, $sample_test,
-            '... and it did not alter the object' );
-        is_blessed($sample_obj_result);
-
-        my $sample_ref_result = Array::2D->rows( $sample_ref, @indices );
-        is_deeply( $sample_ref_result,
-            $test_against, "Fetched rows: $description: sample reference" );
-        is_deeply( $sample_ref, $sample_test,
-            '... and it did not alter the reference' );
-        is_blessed($sample_ref_result);
-
-        my $sample_transposed_obj_result
-          = $sample_transposed_obj->cols(@indices);
-        is_deeply( $sample_transposed_obj_result,
-            $test_against, "Fetched cols: $description: sample object" );
-        is_deeply( $sample_transposed_obj, $sample_transposed_test,
-            '... and it did not alter the object' );
-        is_blessed($sample_transposed_obj_result);
-
-        my $sample_transposed_ref_result
-          = Array::2D->rows( $sample_ref, @indices );
-        is_deeply( $sample_transposed_ref_result,
-            $test_against, "Fetched cols: $description: sample reference" );
-        is_deeply( $sample_transposed_ref, $sample_transposed_test,
-            '... and it did not alter the reference' );
-        is_blessed($sample_transposed_ref_result);
-
-    } ## tidy end: for my $test_r (@rows_cols_tests)
-
-} ## tidy end: sub test_rows_or_cols
-
-note 'Testing rows()';
-a2dcan('rows');
-
-test_rows_or_cols();
-
-is_deeply( $empty_obj->rows( 1, 2 ),
-    [], 'Fetched nonexistent rows from empty object' );
-is_deeply( $empty_obj, [], '... and it did not alter the object' );
-is_deeply( Array::2D->rows( $empty_ref, 1, 2 ),
-    [], 'Fetched nonexistent rows from empty reference' );
-is_deeply( $empty_ref, [], '... and it did not alter the reference' );
-
-note 'Testing cols()';
-a2dcan('cols');
-
-test_rows_or_cols();
-
-is_deeply( $empty_obj->cols( 1, 2 ),
-    [], 'Fetched nonexistent columns from empty object' );
-is_deeply( $empty_obj, [], '... and it did not alter the object' );
-is_deeply( Array::2D->cols( $empty_ref, 1, 2 ),
-    [], 'Fetched nonexistent columns from empty reference' );
-is_deeply( $empty_ref, [], '... and it did not alter the reference' );
-
-note 'Testing slice_cols()';
-a2dcan('slice_cols');
-
-my @slice_cols_tests = (
-    {   indices      => [ 0, 1 ],
-        test_against => [
-            [ 'Joshua',      29 ],
-            [ 'Christopher', 59, ],
-            [ 'Emily',       25, ],
-            [ 'Nicholas',    -14, ],
-            [ 'Madison',     8, ],
-            [ 'Andrew',      -15, ],
-            [ 'Hannah',      38, ],
-            [ 'Ashley',      57, ],
-            [ 'Alexis',      50, ],
-            [ 'Joseph',      0, ],
-
-        ],
-        description => 'first two',
-    },
-    {   indices      => [ 2, 3, 4 ],
-        test_against => [
-
-            [ 'San Mateo',     undef,             'Hannah' ],
-            [ 'New York City', undef,             'Alexis' ],
-            [ 'Dallas',        'Aix-en-Provence', 'Michael' ],
-            [],
-            ['Vallejo'],
-            [],
-            [ 'Romita', undef, 'Joshua', ],
-            ['Ray'],
-            [ 'San Carlos', undef, 'Christopher' ],
-            ['San Francisco'],
-
-        ],
-        description => 'last three',
-    },
-    {   indices      => [ 1, 2 ],
-        test_against => [
-            [ 29, 'San Mateo' ],
-            [ 59, 'New York City' ],
-            [ 25, 'Dallas' ],
-            [ -14, ],
-            [ 8, 'Vallejo' ],
-            [ -15, ],
-            [ 38, 'Romita' ],
-            [ 57, 'Ray' ],
-            [ 50, 'San Carlos' ],
-            [ 0,  'San Francisco' ],
-        ],
-        description => 'two middle',
-    },
-    {   indices      => [ -2, -1 ],
-        test_against => [
-            [ undef,             'Hannah' ],
-            [ undef,             'Alexis' ],
-            [ 'Aix-en-Provence', 'Michael' ],
-            [],
-            [],
-            [],
-            [ undef, 'Joshua', ],
-            [],
-            [ undef, 'Christopher' ],
-        ],
-        description => 'last two using negative subscripts',
-    },
-    {   indices      => [ 1, 4 ],
-        test_against => [
-            [ 29, 'Hannah' ],
-            [ 59, 'Alexis' ],
-            [ 25, 'Michael' ],
-            [ -14, ],
-            [ 8, ],
-            [ -15, ],
-            [ 38, 'Joshua' ],
-            [ 57, ],
-            [ 50, 'Christopher' ],
-            [ 0, ],
-        ],
-        description => 'Two non-adjacent',
-    },
-    {   indices      => [ 4, 0 ],
-        test_against => [
-
-            [ 'Hannah',      'Joshua' ],
-            [ 'Alexis',      'Christopher' ],
-            [ 'Michael',     'Emily' ],
-            [ undef,         'Nicholas' ],
-            [ undef,         'Madison' ],
-            [ undef,         'Andrew' ],
-            [ 'Joshua',      'Hannah' ],
-            [ undef,         'Ashley' ],
-            [ 'Christopher', 'Alexis' ],
-            [ undef,         'Joseph' ],
-        ],
-        description => 'Two non-adjacent, in reverse order',
-    },
-    {   indices      => [ 11, 12 ],
-        test_against => [],
-        description  => 'nonexsitent',
-    },
-    {   indices      => [ -20, -21 ],
-        test_against => [],
-        description  => 'nonexsitent, with negative subscripts',
-    },
-    {   indices      => [ 3, 4, 5 ],
-        test_against => [
-
-            [ undef,             'Hannah' ],
-            [ undef,             'Alexis' ],
-            [ 'Aix-en-Provence', 'Michael' ],
-            [],
-            [],
-            [],
-            [ undef, 'Joshua', ],
-            [],
-            [ undef, 'Christopher' ],
-        ],
-        description => 'range, including a nonexistent one',
-    },
-    {   indices      => [ 1, 1 ],
-        test_against => [
-            [ 29,  29, ],
-            [ 59,  59, ],
-            [ 25,  25, ],
-            [ -14, -14 ],
-            [ 8,   8 ],
-            [ -15, -15 ],
-            [ 38,  38 ],
-            [ 57,  57 ],
-            [ 50,  50 ],
-            [ 0,   0 ],
-        ],
-        description => 'two duplicates',
-    },
-
-);
-
-for my $test_r (@slice_cols_tests) {
-    my @indices      = @{ $test_r->{indices} };
-    my $test_against = $test_r->{test_against};
-    my $description  = $test_r->{description};
-
-    my $sample_obj_result = $sample_obj->slice_cols(@indices);
-
-    is_deeply( $sample_obj_result,
-        $test_against, "Fetched sliced cols: $description: sample object" );
-    is_deeply( $sample_obj, $sample_test,
-        '... and it did not alter the object' );
-    is_blessed($sample_obj_result);
-
-    my $sample_ref_result = Array::2D->slice_cols( $sample_ref, @indices );
-    is_deeply( $sample_ref_result, $test_against,
-        "Fetched sliced cols: $description: sample reference" );
-    is_deeply( $sample_ref, $sample_test,
-        '... and it did not alter the reference' );
-    is_blessed($sample_ref_result);
-
-} ## tidy end: for my $test_r (@slice_cols_tests)
-
-is_deeply( $empty_obj->slice_cols( 1, 2 ),
-    [], 'Fetched nonexistent sliced cols from empty object' );
-is_deeply( $empty_obj, [], '... and it did not alter the object' );
-is_deeply( Array::2D->slice_cols( $empty_ref, 1, 2 ),
-    [], 'Fetched nonexistent sliced cols from empty reference' );
+    my ( $col, $expected_results, $description, $test_array ) = @$test_r;
+    my $indices = [$col];
+    test_reader( 'col', "Fetched $description",
+        $indices, $expected_results, $test_array );
+}
 
 done_testing;

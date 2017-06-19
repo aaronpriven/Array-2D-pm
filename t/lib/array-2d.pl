@@ -154,5 +154,13 @@ sub isnt_blessed {
 }
 
 sub a2dcan {
+    my @methods = @_;
+    
+    if (@_ == 1) {
+        note "Testing $_[0]()";
+    } else {
+        note "Testing methods: @_";
+    }
+    
     can_ok( 'Array::2D', @_ );
 }
