@@ -116,8 +116,13 @@ our $one_col_obj = Array::2D->new(
     ['Univers'], ['Frutiger'],
 );
 
-# $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref used for
-# testing push, insert, etc.
+# note that one_row_test and one_col_test are not 2D arrays, but
+# a single row or column
+our $one_row_test = [ 'Michael', 31, 'Union City', 'Vancouver', 'Emily' ];
+our $one_col_test = [
+    'Times',  'Helvetica', 'Courier', 'Lucida', 'Myriad', 'Minion',
+    'Syntax', 'Johnston',  'Univers', 'Frutiger',
+];
 
 our $empty_ref = [];
 our $empty_obj = Array::2D->empty();
