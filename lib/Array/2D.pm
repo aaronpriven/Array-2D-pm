@@ -179,7 +179,7 @@ Some general notes:
 Except for constructor methods, all methods can be called as an object 
 method on a blessed Array::2D object:
 
-  $self->clone();
+  $array_obj->clone();
 
 Or as a class method, if one supplies the array of arrays as the first
 argument:
@@ -966,6 +966,14 @@ Returns a new Array::2D object with the specified columns. This is transposed
 from the original array's order, so each column requested will be in its own
 row.
 
+ $array = [ 
+            [ qw/ a b c d / ],
+            [ qw/ j k l m / ],
+            [ qw/ w x y z / ],
+          ];
+ my $cols = Array::2D->cols($array, 1, 2);
+ # $cols = bless [ [ qw/ b k x / ] , [ qw/ c l y / ] ], 'Array::2D';
+
 Note that duplicates are not de-duplicated, so the result of
 $obj->cols(1,1,1) will retrieve three copies of the same column.
 
@@ -985,10 +993,22 @@ sub cols {
 =item B<slice_cols(I<col_idx>, <col_idx>...)>
 
 Returns a new Array::2D object with the specified columns of each row.
-Unlike C<slice()>, the result of this method is not transposed.
+Unlike C<cols()>, the result of this method is not transposed.
+
+ $array = [ 
+            [ qw/ a b c d / ],
+            [ qw/ j k l m / ],
+            [ qw/ w x y z / ],
+          ];
+ my $sliced_cols = Array::2D->slice_cols($array, 1, 2);
+ # $sliced_cols = bless [ 
+ #                  [ qw/ b c / ] , 
+ #                  [ qw/ k l / ] , 
+ #                  [ qw/ x y / ] , 
+ #                ], 'Array::2D';
 
 Note that duplicates are not de-duplicated, so the result of
-$obj->cols(1,1,1) will retrieve three copies of the same column.
+$obj->slice_cols(1,1,1) will retrieve three copies of the same column.
 
 =cut
 
