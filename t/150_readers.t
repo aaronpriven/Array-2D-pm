@@ -9,8 +9,10 @@ BEGIN {
 our ( $sample_obj,            $sample_ref,            $sample_test );
 our ( $sample_transposed_obj, $sample_transposed_ref, $sample_transposed_test );
 our ( $empty_obj,             $empty_ref );
+our ( $one_row_ref,           $one_row_test );
+our ( $one_col_ref,           $one_col_test );
 
-plan tests => 433;
+#plan tests => 433;
 
 note 'Testing element()';
 a2dcan('element');
@@ -28,20 +30,35 @@ my @element_tests = (
     [ 2,  6,  'Fetched element from nonexistent column' ],
     [ -20, 0,  'Fetched element from nonexistent negative row' ],
     [ 0,   -9, 'Fetched element from nonexistent negative column' ],
+    [ 0,   0,  'Fetched element from one-element array', 'x', [ ['x'] ], ],
+    [ 0,   1,  'Fetched element from one-row array', 'x', [ [ 1, 'x' ] ], ],
+    [ 1,   0,  'Fetched element from one-column array', 'x', [ [1], ['x'] ], ],
 );
 
 for my $test_r (@element_tests) {
-    my ( $row, $col, $description, $value, $test_change ) = @$test_r;
-    # value should often be set to undef because it's not listed
-    is( $sample_obj->element( $row, $col ),
+    my ( $row, $col, $description, $value, $array_test ) = @$test_r;
+
+    my ( $obj_to_test, $ref_to_test );
+
+    if ($array_test) {
+        $ref_to_test = Array::2D->clone_unblessed($array_test);
+        $obj_to_test = Array::2D->clone($array_test);
+    }
+    else {
+        $array_test  = $sample_test;
+        $obj_to_test = $sample_obj;
+        $ref_to_test = $sample_ref;
+    }
+
+    is( $obj_to_test->element( $row, $col ),
         $value, "$description: sample object" );
-    is_deeply( $sample_obj, $sample_test,
+    is_deeply( $obj_to_test, $array_test,
         '... and it did not alter the object' );
-    is( Array::2D->element( $sample_ref, $row, $col ),
+    is( Array::2D->element( $ref_to_test, $row, $col ),
         $value, "$description: sample reference" );
-    is_deeply( $sample_ref, $sample_test,
+    is_deeply( $ref_to_test, $array_test,
         '... and it did not alter the reference' );
-}
+} ## tidy end: for my $test_r (@element_tests)
 
 is( $empty_obj->element( 1, 1 ),
     undef, 'Fetched nonexistent element from empty object' );
@@ -70,20 +87,36 @@ my @row_tests = (
     ],
     [ 10,  [], 'nonexistent row' ],
     [ -20, [], 'nonexistent negative row' ],
+    [ 0,   [], 'row from empty array', [] ],
+    [ 0, $one_row_test, 'row from one-row array', $one_row_ref ],
+    [ 1, ['Helvetica'], 'row from one-column array', $one_col_ref ],
 );
 
 # row returns a list, so we have to create anonymous arrayref to test
 for my $test_r (@row_tests) {
-    my ( $idx, $test_against, $description ) = @$test_r;
-    is_deeply( [ $sample_obj->row($idx) ],
+    my ( $idx, $test_against, $description, $array_test ) = @$test_r;
+
+    my ( $obj_to_test, $ref_to_test );
+
+    if ($array_test) {
+        $ref_to_test = Array::2D->clone_unblessed($array_test);
+        $obj_to_test = Array::2D->clone($array_test);
+    }
+    else {
+        $array_test  = $sample_test;
+        $obj_to_test = $sample_obj;
+        $ref_to_test = $sample_ref;
+    }
+
+    is_deeply( [ $obj_to_test->row($idx) ],
         $test_against, "Fetched $description: sample object" );
-    is_deeply( $sample_obj, $sample_test,
+    is_deeply( $obj_to_test, $array_test,
         '... and it did not alter the object' );
-    is_deeply( [ Array::2D->row( $sample_ref, $idx ) ],
+    is_deeply( [ Array::2D->row( $ref_to_test, $idx ) ],
         $test_against, "Fetched $description: sample reference" );
-    is_deeply( $sample_ref, $sample_test,
+    is_deeply( $ref_to_test, $array_test,
         '... and it did not alter the reference' );
-}
+} ## tidy end: for my $test_r (@row_tests)
 
 is_deeply( [ $empty_obj->row(1) ],
     [], 'Fetched nonexistent row from empty object' );
@@ -124,21 +157,37 @@ my @col_tests = (
     ],
     [ 6,  [], 'nonexistent column' ],
     [ -9, [], 'nonexistent negative column' ],
+    [ 0,  [], 'column from empty array', [] ],
+    [ 0, $one_col_test, 'column from one-column array', $one_col_ref ],
+    [ 2, ['Union City'], 'column from one-row array', $one_row_ref ],
 );
 
 # col returns a list, so we have to create anonymous arrayref to test
 for my $test_r (@col_tests) {
-    my ( $idx, $test_against, $description ) = @$test_r;
-    is_deeply( [ $sample_obj->col($idx) ],
+
+    my ( $idx, $test_against, $description, $array_test ) = @$test_r;
+
+    my ( $obj_to_test, $ref_to_test );
+
+    if ($array_test) {
+        $ref_to_test = Array::2D->clone_unblessed($array_test);
+        $obj_to_test = Array::2D->clone($array_test);
+    }
+    else {
+        $array_test  = $sample_test;
+        $obj_to_test = $sample_obj;
+        $ref_to_test = $sample_ref;
+    }
+
+    is_deeply( [ $obj_to_test->col($idx) ],
         $test_against, "Fetched $description: sample object" );
-    #note( explain( $sample_obj->col($idx) ) );
-    is_deeply( $sample_obj, $sample_test,
+    is_deeply( $obj_to_test, $array_test,
         '... and it did not alter the object' );
-    is_deeply( [ Array::2D->col( $sample_ref, $idx ) ],
+    is_deeply( [ Array::2D->col( $ref_to_test, $idx ) ],
         $test_against, "Fetched $description: sample reference" );
-    is_deeply( $sample_ref, $sample_test,
+    is_deeply( $ref_to_test, $array_test,
         '... and it did not alter the reference' );
-}
+} ## tidy end: for my $test_r (@col_tests)
 
 is_deeply( [ $empty_obj->col(1) ],
     [], 'Fetched nonexistent column from empty object' );
@@ -426,8 +475,8 @@ for my $test_r (@slice_cols_tests) {
     is_blessed($sample_obj_result);
 
     my $sample_ref_result = Array::2D->slice_cols( $sample_ref, @indices );
-    is_deeply( $sample_ref_result,
-        $test_against, "Fetched sliced cols: $description: sample reference" );
+    is_deeply( $sample_ref_result, $test_against,
+        "Fetched sliced cols: $description: sample reference" );
     is_deeply( $sample_ref, $sample_test,
         '... and it did not alter the reference' );
     is_blessed($sample_ref_result);
