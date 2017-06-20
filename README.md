@@ -97,7 +97,7 @@ Some general notes:
 - Except for constructor methods, all methods can be called as an object 
 method on a blessed Array::2D object:
 
-        $self->clone();
+        $array_obj->clone();
 
     Or as a class method, if one supplies the array of arrays as the first
     argument:
@@ -399,16 +399,36 @@ with undefined values.
     from the original array's order, so each column requested will be in its own
     row.
 
+        $array = [ 
+                   [ qw/ a b c d / ],
+                   [ qw/ j k l m / ],
+                   [ qw/ w x y z / ],
+                 ];
+        my $cols = Array::2D->cols($array, 1, 2);
+        # $cols = bless [ [ qw/ b k x / ] , [ qw/ c l y / ] ], 'Array::2D';
+
     Note that duplicates are not de-duplicated, so the result of
     $obj->cols(1,1,1) will retrieve three copies of the same column.
 
 - **slice\_cols(_col\_idx_, &lt;col\_idx**...)>
 
     Returns a new Array::2D object with the specified columns of each row.
-    Unlike `slice()`, the result of this method is not transposed.
+    Unlike `cols()`, the result of this method is not transposed.
+
+        $array = [ 
+                   [ qw/ a b c d / ],
+                   [ qw/ j k l m / ],
+                   [ qw/ w x y z / ],
+                 ];
+        my $sliced_cols = Array::2D->slice_cols($array, 1, 2);
+        # $sliced_cols = bless [ 
+        #                  [ qw/ b c / ] , 
+        #                  [ qw/ k l / ] , 
+        #                  [ qw/ x y / ] , 
+        #                ], 'Array::2D';
 
     Note that duplicates are not de-duplicated, so the result of
-    $obj->cols(1,1,1) will retrieve three copies of the same column.
+    $obj->slice\_cols(1,1,1) will retrieve three copies of the same column.
 
 - **slice(_row\_idx\_from, col\_idx\_to, col\_idx\_from, col\_idx\_to_)**
 
@@ -745,8 +765,9 @@ the object.
 If the `Unicode::GCString|Unicode::GCString` module can be loaded,
 its `columns` method will be used to determine the width of each
 character. This will treat composed accented characters and
-double-width Asian characters correctly. Otherwise, it will 
-use Perl's `length` function.
+double-width Asian characters correctly.
+
+Otherwise, Array::2D will use Perl's `length` function.
 
 - **tabulate(_separator_)**
 
@@ -778,6 +799,22 @@ use Perl's `length` function.
 
 ## SERIALIZING AND OUTPUT TO FILES
 
+- **tsv\_lines(_headers_)**
+
+    Returns a list of strings in list context, or an arrayref of strings in
+    scalar context. The elements of each row are present in the string,
+    separated by tab characters.
+
+    If there are any arguments, they will be used first as the first
+    row of text. The idea is that these will be the headers of the
+    columns. It's not really any different than putting the column
+    headers as the first element of the data, but frequently these are
+    stored separately. If there is only one element and it is a reference
+    to an array, that array will be used as the first row of text.
+
+    If tabs are present in any element,
+    they will be replaced by the Unicode Replacement Character, U+FFFD.
+
 - **tsv(_headers_)**
 
     Returns a single string with the elements of each row delimited by
@@ -790,11 +827,8 @@ use Perl's `length` function.
     stored separately. If there is only one element and it is a reference
     to an array, that array will be used as the first row of text.
 
-    If tabs, carriage returns, or line feeds are present in any element,
-    they will be replaced by the Unicode visible symbols for tabs (U+2409),
-    line feeds (U+240A), or carriage returns (U+240D). This generates a
-    warning.  (In the future, this may change to the Replacement Character, 
-    U+FFFD.)
+    If tabs or line feeds are present in any element,
+    they will be replaced by the Unicode Replacement Character, U+FFFD.
 
 - **&lt;file(...) **>
 
@@ -886,13 +920,11 @@ use Perl's `length` function.
 
 ## WARNINGS
 
-- Tab character found in array during Array::2D->tsv; converted to visible symbol
-- Line feed character found in array during Array::2D->tsv; converted to visible symbol
-- Carriage return character found in array during Array::2D->tsv; converted to visible symbol
+- Tab character found converting to tab-separated values. Replaced with REPLACEMENT CHARACTER
+- Line feed character found assembling tab-separated values.  Replaced with REPLACEMENT CHARACTER
 
     An invalid character for TSV data was found in the array when creating 
-    TSV data. It was converted to the Unicode visible symbol for that
-    character, but this warning was issued.
+    TSV data. It was replaced with the Unicode REPLACEMENT CHARACTER (U+FFFD).
 
 # TO DO
 
@@ -902,7 +934,8 @@ and `file()`.
 # SEE ALSO
 
 The [Data::Table](https://metacpan.org/pod/Data::Table) module on CPAN provides a more conventionally
-opaque object that does many of the same things as this module, and more.
+opaque object that does many of the same things as this module, and also 
+a lot more.
 
 # DEPENDENCIES
 

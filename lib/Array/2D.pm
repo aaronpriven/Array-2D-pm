@@ -293,7 +293,6 @@ this data structure will become a reference to the object, too.
 sub bless {    ## no critic (Subroutines::ProhibitBuiltInHomonyms)
 
     my $class = shift;
-    my $self;
 
     my @rows = @_;
 
@@ -305,16 +304,13 @@ sub bless {    ## no critic (Subroutines::ProhibitBuiltInHomonyms)
         my $blessing = blessed( $rows[0] );
         if ( defined($blessing) and $blessing eq $class ) {
             # already an object
-            $self = $rows[0];
-            return $self;
+            return $rows[0];
         }
 
         if ( is_plain_arrayref( $rows[0] )
             and all { is_plain_arrayref($_) } @{ $rows[0] } )
         {
-            my $self = $rows[0];
-            CORE::bless $self, $class;
-            return $self;
+            return CORE::bless $rows[0], $class;
         }
     }
 
@@ -323,8 +319,7 @@ sub bless {    ## no critic (Subroutines::ProhibitBuiltInHomonyms)
           . 'must be unblessed arrayrefs (rows)';
     }
 
-    CORE::bless [@rows], $class;
-    return $self;
+    return CORE::bless [@rows], $class;
 
 } ## tidy end: sub bless
 
