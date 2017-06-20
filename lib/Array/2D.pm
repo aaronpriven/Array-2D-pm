@@ -3,8 +3,8 @@ use 5.008001;
 use strict;
 use warnings;
 
-our $VERSION = "0.001_001";
-$VERSION = eval $VERSION;
+our $VERSION = '0.001_001';
+$VERSION = eval $VERSION;   ## no critic (BuiltinFunctions::ProhibitStringyEval)
 
 ## no critic (RequirePodAtEnd)
 
@@ -258,7 +258,7 @@ use C<Array::2D->bless ( [ @your_rows ] )>.
 
 sub new {
 
-    if (    @_ == 2
+    if (    2 == @_
         and is_plain_arrayref( $_[1] )
         and all { is_plain_arrayref($_) } @{ $_[1] } )
     {
@@ -287,18 +287,21 @@ this data structure will become a reference to the object, too.
 
 =cut
 
-sub bless {
+## no critic (RequireTrailingCommaAtNewline)
+# eliminates a PPI false positive -- it thinks bless { ... } is a hashref
+
+sub bless {    ## no critic (Subroutines::ProhibitBuiltInHomonyms)
 
     my $class = shift;
     my $self;
 
     my @rows = @_;
 
-    if ( @rows == 0 ) {    # if no arguments, new anonymous AoA
+    if ( 0 == @rows ) {    # if no arguments, new anonymous AoA
         return $class->empty;
     }
 
-    if ( @rows == 1 ) {
+    if ( 1 == @rows ) {
         my $blessing = blessed( $rows[0] );
         if ( defined($blessing) and $blessing eq $class ) {
             # already an object
@@ -315,17 +318,17 @@ sub bless {
         }
     }
 
-    $self = [@rows];
-
     if ( any { not is_plain_arrayref($_) } @rows ) {
-        croak
-"Arguments to $class->new or $class->blessed must be unblessed arrayrefs (rows)";
+        croak "Arguments to $class->new or $class->blessed "
+          . 'must be unblessed arrayrefs (rows)';
     }
 
-    CORE::bless $self, $class;
+    CORE::bless [@rows], $class;
     return $self;
 
 } ## tidy end: sub bless
+
+## use critic
 
 =item B<empty>
 
@@ -452,7 +455,7 @@ sub new_to_term_width {
         {   array     => { type    => ARRAYREF },
             width     => { default => 80 },
             separator => { default => q[ ] },
-        }
+        },
     );
 
     my $array = $params{array};
@@ -467,11 +470,11 @@ sub new_to_term_width {
 
     my $rows = ceil( @$array / $cols );
 
-    my $obj = $class->new_down( $rows, @$array );
+    my $array2d = $class->new_down( $rows, @$array );
 
-    my $tabulated = $obj->tabulate_equal_width($separator);
+    my $tabulated = $array2d->tabulate_equal_width($separator);
 
-    return $obj, $tabulated;
+    return $array2d, $tabulated;
 
 } ## tidy end: sub new_to_term_width
 
@@ -528,7 +531,7 @@ sub new_from_xlsx {
 
     # || handles empty strings
 
-    croak "No file specified in " . __PACKAGE__ . '->new_from_xlsx'
+    croak 'No file specified in ' . __PACKAGE__ . '->new_from_xlsx'
       unless $xlsx_filespec;
 
     require Spreadsheet::ParseXLSX;    ### DEP ###
@@ -605,11 +608,11 @@ my $filetype_from_ext_r = sub {
     my $filespec = shift;
     return unless $filespec;
 
-    my ($ext) = $filespec =~ m/
+    my ($ext) = $filespec =~ m[
                       [.]     # a dot
                       ([^.]+) # one or more non-dot characters
                       \z      # end of the string
-                      /x;
+                      ]x;
 
     my $fext = fc($ext);
 
@@ -661,9 +664,11 @@ my $invocant_cr = sub {
     return ( $blessing, $invocant ) if defined $blessing;
     # invocant is an object blessed into the $blessing class
 
-    my $object = shift;
-    return ( $invocant, $object ) if is_arrayref($object);
+    my $array2d = shift;
+    return ( $invocant, $array2d ) if is_arrayref($array2d);
     # invocant is a class
+
+    ## no critic (ProhibitMagicNumbers)
     croak 'No array passed to ' . ( caller(1) )[3];
 
 };
@@ -876,6 +881,7 @@ does not already exist.
 =cut
 
 sub element {
+    ## no critic (ProhibitExplicitReturnUndef)
     my ( $class, $self ) = &$invocant_cr;
 
     my $row_idx = shift;
@@ -949,7 +955,6 @@ $obj->rows(1,1,1) will be three copies of the same row.
 sub rows {
     my ( $class, $self ) = &$invocant_cr;
     my @row_indices = @_;
-    my $height;
 
     my $rows
       = $class->new(
@@ -1504,7 +1509,7 @@ sub push_cols {
     my @cols    = @_;
     my $col_idx = $class->last_col($self);
 
-    if ( $col_idx == -1 ) {
+    if ( -1 == $col_idx ) {
         @{$self} = map { [ @{$_} ] } @{$self};
         return $class->width($self) if defined wantarray;
         return;
@@ -1525,6 +1530,8 @@ sub push_cols {
     return $class->width($self) if defined wantarray;
     return;
 
+} ## tidy end: sub push_cols
+
 =back
 
 =head2 RETRIEVING AND DELETING ROWS AND COLUMNS
@@ -1538,22 +1545,22 @@ of the elements of that row.
 
 =cut
 
-    sub del_row {
-        my ( $class, $self ) = &$invocant_cr;
-        my $row_idx = shift;
+sub del_row {
+    my ( $class, $self ) = &$invocant_cr;
+    my $row_idx = shift;
 
-        return () unless @{$self};
+    return () unless @{$self};
 
-        my @deleted;
-        if ( defined wantarray ) {
-            @deleted = $class->row( $self, $row_idx );
-        }
-
-        splice( @{$self}, $row_idx, 1 );
-
-        return @deleted if defined wantarray;
-        return;
+    my @deleted;
+    if ( defined wantarray ) {
+        @deleted = $class->row( $self, $row_idx );
     }
+
+    splice( @{$self}, $row_idx, 1 );
+
+    return @deleted if defined wantarray;
+    return;
+}
 
 =item B<del_col(I<col_idx>)>
 
@@ -1562,22 +1569,22 @@ list of the elements of that column.
 
 =cut
 
-    sub del_col {
-        my ( $class, $self ) = &$invocant_cr;
-        my $col_idx = @_;
+sub del_col {
+    my ( $class, $self ) = &$invocant_cr;
+    my $col_idx = @_;
 
-        my @deleted;
-        if ( defined wantarray ) {
-            @deleted = $class->col( $self, $col_idx );
-        }
-
-        foreach my $row ( @{$self} ) {
-            splice( @{$row}, $col_idx, 1 );
-        }
-
-        return @deleted if defined wantarray;
-        return;
+    my @deleted;
+    if ( defined wantarray ) {
+        @deleted = $class->col( $self, $col_idx );
     }
+
+    foreach my $row ( @{$self} ) {
+        splice( @{$row}, $col_idx, 1 );
+    }
+
+    return @deleted if defined wantarray;
+    return;
+}
 
 =item B<del_rows(I<row_idx>, I<row_idx>...)>
 
@@ -1586,27 +1593,27 @@ Array::2D object of those rows.
 
 =cut
 
-    sub del_rows {
-        my ( $class, $self ) = &$invocant_cr;
-        my @row_idxs = @_;
+sub del_rows {
+    my ( $class, $self ) = &$invocant_cr;
+    my @row_idxs = @_;
 
-        unless (@$self) {
-            return $class->empty if defined wantarray;
-            return;
-        }
-
-        my $deleted;
-        if ( defined wantarray ) {
-            $deleted = $class->rows( $self, @row_idxs );
-        }
-
-        foreach my $row_idx (@row_idxs) {
-            splice( @{$self}, $row_idx, 1 );
-        }
-
-        return $deleted if defined wantarray;
+    unless (@$self) {
+        return $class->empty if defined wantarray;
         return;
-    } ## tidy end: sub del_rows
+    }
+
+    my $deleted;
+    if ( defined wantarray ) {
+        $deleted = $class->rows( $self, @row_idxs );
+    }
+
+    foreach my $row_idx (@row_idxs) {
+        splice( @{$self}, $row_idx, 1 );
+    }
+
+    return $deleted if defined wantarray;
+    return;
+} ## tidy end: sub del_rows
 
 =item B<del_cols(I<col_idx>, I<col_idx>...)>
 
@@ -1615,24 +1622,24 @@ Array::2D object of those columns.
 
 =cut
 
-    sub del_cols {
-        my ( $class, $self ) = &$invocant_cr;
-        my @col_idxs = @_;
+sub del_cols {
+    my ( $class, $self ) = &$invocant_cr;
+    my @col_idxs = @_;
 
-        my $deleted;
-        if ( defined wantarray ) {
-            $deleted = $class->cols( $self, @col_idxs );
-        }
-
-        foreach my $col_idx ( reverse sort @_ ) {
-            foreach my $row ( @{$self} ) {
-                splice( @{$row}, $col_idx, 1 );
-            }
-        }
-
-        return $deleted if defined wantarray;
-        return;
+    my $deleted;
+    if ( defined wantarray ) {
+        $deleted = $class->cols( $self, @col_idxs );
     }
+
+    foreach my $col_idx ( reverse sort @_ ) {
+        foreach my $row ( @{$self} ) {
+            splice( @{$row}, $col_idx, 1 );
+        }
+    }
+
+    return $deleted if defined wantarray;
+    return;
+}
 
 =item B<shift_row()>
 
@@ -1641,13 +1648,13 @@ of that row.
 
 =cut
 
-    sub shift_row {
-        my ( $class, $self ) = &$invocant_cr;
-        return () unless @{$self};
-        my @row = @{ shift @{$self} };
-        pop @row while @row and not defined $row[-1];
-        return @row;
-    }
+sub shift_row {
+    my ( $class, $self ) = &$invocant_cr;
+    return () unless @{$self};
+    my @row = @{ shift @{$self} };
+    pop @row while @row and not defined $row[-1];
+    return @row;
+}
 
 =item B<shift_col()>
 
@@ -1656,12 +1663,12 @@ elements of that column.
 
 =cut
 
-    sub shift_col {
-        my ( $class, $self ) = &$invocant_cr;
-        my @col = map { shift @{$_} } @{$self};
-        pop @col while @col and not defined $col[-1];
-        return @col;
-    }
+sub shift_col {
+    my ( $class, $self ) = &$invocant_cr;
+    my @col = map { shift @{$_} } @{$self};
+    pop @col while @col and not defined $col[-1];
+    return @col;
+}
 
 =item B<pop_row()>
 
@@ -1670,13 +1677,13 @@ of that row.
 
 =cut
 
-    sub pop_row {
-        my ( $class, $self ) = &$invocant_cr;
-        return () unless @{$self};
-        my @row = @{ pop @{$self} };
-        pop @row while @row and not defined $row[-1];
-        return @row;
-    }
+sub pop_row {
+    my ( $class, $self ) = &$invocant_cr;
+    return () unless @{$self};
+    my @row = @{ pop @{$self} };
+    pop @row while @row and not defined $row[-1];
+    return @row;
+}
 
 =item B<pop_col()>
 
@@ -1685,13 +1692,11 @@ elements of that column.
 
 =cut
 
-    sub pop_col {
-        my ( $class, $self ) = &$invocant_cr;
-        my $last_col = $class->last_col($self);
-        return $class->del_col( $self, $last_col );
-    }
-
-} ## tidy end: sub push_cols
+sub pop_col {
+    my ( $class, $self ) = &$invocant_cr;
+    my $last_col = $class->last_col($self);
+    return $class->del_col( $self, $last_col );
+}
 
 =back
 
@@ -1751,7 +1756,7 @@ empty strings.
 
 sub prune_empty {
     my ( $class, $self ) = &$invocant_cr;
-    my $callback = sub { !defined $_ or $_ eq q[] };
+    my $callback = sub { not defined $_ or $_ eq q[] };
     return $class->prune_callback( $self, $callback );
 }
 
@@ -1764,7 +1769,7 @@ strings that are empty or that consist solely of white space.
 
 sub prune_space {
     my ( $class, $self ) = &$invocant_cr;
-    my $callback = sub { !defined $_ or m[\A \s* \z]x };
+    my $callback = sub { not defined $_ or m[\A \s* \z]x };
     return $class->prune_callback( $self, $callback );
 }
 
@@ -1806,8 +1811,8 @@ sub prune_callback {
     # remove final blank rows
     while (
         @{$self}
-        and (  !defined $self->[-1]
-            or @{ $self->[-1] } == 0
+        and (  not defined $self->[-1]
+            or 0 == @{ $self->[-1] }
             or all { $callback->() } @{ $self->[-1] } )
       )
     {
@@ -2050,7 +2055,7 @@ sub hash_of_row_elements {
     my ( $keycol, $valuecol );
     if (@_) {
         $keycol = shift;
-        $valuecol = shift // ( $keycol == 0 ? 1 : 0 );
+        $valuecol = shift // ( 0 == $keycol ? 1 : 0 );
 
         # $valuecol defaults to first column that is not the same as $keycol
     }
@@ -2193,6 +2198,24 @@ sub tabulate_equal_width {
 
 =over
 
+=item B<< tsv_lines(I<headers>) >>
+
+Returns a list of strings in list context, or an arrayref of strings in
+scalar context. The elements of each row are present in the string,
+separated by tab characters.
+
+If there are any arguments, they will be used first as the first
+row of text. The idea is that these will be the headers of the
+columns. It's not really any different than putting the column
+headers as the first element of the data, but frequently these are
+stored separately. If there is only one element and it is a reference
+to an array, that array will be used as the first row of text.
+
+If tabs are present in any element,
+they will be replaced by the Unicode Replacement Character, U+FFFD.
+
+=cut
+
 =item B<< tsv(I<headers>) >>
 
 Returns a single string with the elements of each row delimited by
@@ -2205,24 +2228,48 @@ headers as the first element of the data, but frequently these are
 stored separately. If there is only one element and it is a reference
 to an array, that array will be used as the first row of text.
 
-If tabs, carriage returns, or line feeds are present in any element,
-they will be replaced by the Unicode visible symbols for tabs (U+2409),
-line feeds (U+240A), or carriage returns (U+240D). This generates a
-warning.  (In the future, this may change to the Replacement Character, 
-U+FFFD.)
+If tabs or line feeds are present in any element,
+they will be replaced by the Unicode Replacement Character, U+FFFD.
 
 =cut
 
-my $charcarp = sub {
-    my $character  = shift;
-    my $methodname = shift;
-    carp "$character character found in array during $methodname; "
-      . 'converted to visible symbol';
-    return;
-};
+sub tsv_lines {
 
-# I didn't put that inside the tsv method because I thought maybe someday
-# there might be ->csv or something else.
+    my ( $class, $self ) = &$invocant_cr;
+    my @rows = @$self;
+
+    my @lines;
+
+    my @headers = @_;
+    if (@headers) {
+        if ( 1 == @headers and is_plain_arrayref( $headers[0] ) ) {
+            unshift @rows, $headers[0];
+        }
+        else {
+            unshift @rows, \@headers;
+        }
+    }
+
+    my $carped;
+    foreach my $row (@rows) {
+        my @cells = @{$row};
+        foreach (@cells) {
+            $_ //= q[];
+            my $substitutions = s/\t/\x{FFFD}/g;
+            if ( $substitutions and not $carped ) {
+                carp 'Tab character found converting to tab-separated values. '
+                  . 'Converted to REPLACEMENT CHARACTER';
+                $carped = 1;
+            }
+        }
+
+        my $line = join( "\t", @cells );
+        push @lines, $line;
+    }
+
+    return wantarray ? @lines : \@lines;
+
+} ## tidy end: sub tsv_lines
 
 sub tsv {
 
@@ -2233,40 +2280,21 @@ sub tsv {
     # visible symbols for these characters. Which is probably wrong, but
     # why would you feed those in then...
 
-    my ( $class, $orig ) = &$invocant_cr;
-    my $self = $class->define($orig);
+    my ( $class, $self ) = &$invocant_cr;
 
-    my @headers = @_;
-    if ( @headers == 1 and is_plain_arrayref( $headers[0] ) ) {
-        @headers = @{ $headers[0] };
-    }
+    my $lines_r = $class->tsv_lines( $self, @_ );
 
-    my @lines;
-    push @lines, join( "\t", @headers ) if @headers;
-    foreach my $row ( @{$self} ) {
-        my @rowcopy = @{$row};
-        foreach (@rowcopy) {
-            $_ //= q[];
-            if (s/\t/\x{2409}/g) {    # visible symbol for tab
-                $charcarp->( "Tab", "$class->tsv" );
-            }
-
-        }
-        push @lines, join( "\t", @rowcopy );
-    }
-
-    foreach (@lines) {
-        if (s/\n/\x{240A}/g) {        # visible symbol for line feed
-            $charcarp->( "Line feed", "$class->tsv" );
-        }
-        if (s/\r/\x{240D}/g) {        # visible symbol for carriage return
-            $charcarp->( "Carriage return", "$class->tsv" );
+    my $carped;
+    foreach my $line (@$lines_r) {
+        my $substitutions = s/\n/\x{FFFD}/g;
+        if ( $substitutions and not $carped ) {
+            carp 'Line feed character found assembling tab-separated values. '
+              . 'Converted to REPLACEMENT CHARACTER';
+            $carped = 1;
         }
     }
 
-    my $str = join( "\n", @lines ) . "\n";
-
-    return $str;
+    return join( "\n", @$lines_r ) . "\n";
 
 } ## tidy end: sub tsv
 
@@ -2316,7 +2344,7 @@ sub file {
         {   headers     => { type => ARRAYREF, optional => 1 },
             output_file => 1,
             type        => 0,
-        }
+        },
     );
     my $output_file = $params{output_file};
     my $type = $params{type} || $filetype_from_ext_r->($output_file);
@@ -2381,7 +2409,7 @@ sub xlsx {
         {   headers     => { type => ARRAYREF, optional => 1 },
             format      => { type => HASHREF,  optional => 1 },
             output_file => 1,
-        }
+        },
     );
 
     my $output_file       = $params{output_file};
@@ -2394,8 +2422,10 @@ sub xlsx {
     require Excel::Writer::XLSX;    ### DEP ###
 
     my $workbook = Excel::Writer::XLSX->new($output_file);
+    ## no critic (Variables::ProhibitPunctuationVars]
     croak "Can't open $output_file for writing: $!"
       unless defined $workbook;
+    ## use critic
     my $sheet = $workbook->add_worksheet();
     my @format;
 
