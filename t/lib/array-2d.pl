@@ -1,5 +1,6 @@
 use strict;
 use Test::More 0.98;
+use Test::Fatal;
 use lib './lib';
 use Array::2D;
 use Scalar::Util(qw/blessed refaddr/);
@@ -124,10 +125,17 @@ our $one_col_test = [
     'Syntax', 'Johnston',  'Univers', 'Frutiger',
 ];
 
-our $empty_ref = [];
-our $empty_obj = Array::2D->empty();
+sub test_exception (&;@) {
+    my $code        = shift;
+    my $description = shift;
+    my $regex       = shift;
 
-use Scalar::Util('blessed');
+    my $exception_obj = &exception($code);
+    # bypass prototype
+    isnt( $exception_obj, undef, $description );
+    like( $exception_obj, $regex, "... and it's the expected exception" );
+
+}
 
 sub is_blessed {
     my $obj         = shift;
