@@ -1433,7 +1433,6 @@ Takes the specified array of arrays and adds them as new columns,
 before the beginning of the existing columns. Returns the new number of
 columns.
 
-
 =cut
 
 sub unshift_cols {
@@ -1471,6 +1470,7 @@ sub push_col {
     for my $row_idx ( 0 .. max( $class->last_row($self), $#col ) ) {
         $self->[$row_idx][$width] = $col[$row_idx];
     }
+
     return $width + 1;    # new width
 }
 
@@ -2074,8 +2074,9 @@ sub hash_of_row_elements {
 If the C<Unicode::GCString|Unicode::GCString> module can be loaded,
 its C<columns> method will be used to determine the width of each
 character. This will treat composed accented characters and
-double-width Asian characters correctly. Otherwise, it will 
-use Perl's C<length> function.
+double-width Asian characters correctly.
+
+Otherwise, Array::2D will use Perl's C<length> function.
 
 =over
 
@@ -2096,7 +2097,6 @@ So, for example,
  # $arrayref = [ 'a    bbb cc' ,
  #               'dddd e   f'
  #             ];
-
 
 =cut
 
@@ -2494,7 +2494,8 @@ and C<file()>.
 =head1 SEE ALSO
 
 The L<Data::Table|Data::Table> module on CPAN provides a more conventionally
-opaque object that does many of the same things as this module, and more.
+opaque object that does many of the same things as this module, and also 
+a lot more.
 
 =head1 DEPENDENCIES
 
