@@ -6,21 +6,21 @@ BEGIN {
       // die "Can't load array-2d.pl";
 }
 
-our ( $sample_obj,  $sample_ref,  $empty_obj,   $empty_ref );
+our ( $sample_obj, $sample_ref );
 our ( $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref );
 
-my $one_element_obj = Array::2D->bless([['x']]);
-my $one_element_ref = [['x']];
+my $one_element_obj = Array::2D->bless( [ ['x'] ] );
+my $one_element_ref = [ ['x'] ];
 
 # you know my @methods, Watson
 my @methods = (qw/height width last_row last_col/);
 
 my @subjects = (
-    [ 'sample',     $sample_obj,  $sample_ref,  10, 5 ],
-    [ 'one-row',    $one_row_obj, $one_row_ref, 1,  5 ],
-    [ 'one-column', $one_col_obj, $one_col_ref, 10, 1 ],
-    [ 'empty',      $empty_obj,   $empty_ref,   0,  0 ],
-    [ 'one-element', $one_element_obj, $one_element_ref, 1, 1 ],
+    [ 'sample',      $sample_obj,      $sample_ref,      10, 5 ],
+    [ 'one-row',     $one_row_obj,     $one_row_ref,     1,  5 ],
+    [ 'one-column',  $one_col_obj,     $one_col_ref,     10, 1 ],
+    [ 'one-element', $one_element_obj, $one_element_ref, 1,  1 ],
+    [ 'empty', Array::2D->empty, [], 0, 0 ],
 );
 
 plan tests => ( @methods + 1 ) * ( @subjects * 2 + 1 );
@@ -53,8 +53,7 @@ foreach my $method_idx ( 0 .. $#methods ) {
         my ( $name, $obj, $ref, @values ) = @{$subject_r};
         my $value = $values[$method_idx];
 
-        cmp_ok( $obj->$method, '==', $value, "$method() on $name object" )
-          ;
+        cmp_ok( $obj->$method, '==', $value, "$method() on $name object" );
         cmp_ok( Array::2D->$method($ref),
             '==', $value, "$method() on $name reference" );
     }
