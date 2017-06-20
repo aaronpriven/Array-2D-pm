@@ -2258,7 +2258,7 @@ sub tsv_lines {
             my $substitutions = s/\t/\x{FFFD}/g;
             if ( $substitutions and not $carped ) {
                 carp 'Tab character found converting to tab-separated values. '
-                  . 'Converted to REPLACEMENT CHARACTER';
+                  . 'Replaced with REPLACEMENT CHARACTER';
                 $carped = 1;
             }
         }
@@ -2289,7 +2289,7 @@ sub tsv {
         my $substitutions = s/\n/\x{FFFD}/g;
         if ( $substitutions and not $carped ) {
             carp 'Line feed character found assembling tab-separated values. '
-              . 'Converted to REPLACEMENT CHARACTER';
+              . 'Replaced with REPLACEMENT CHARACTER';
             $carped = 1;
         }
     }
@@ -2498,15 +2498,12 @@ as a class object, e.g., $class->set_row(qw/a b c/);
 
 =over
 
-=item Tab character found in array during Array::2D->tsv; converted to visible symbol
+=item Tab character found converting to tab-separated values. Replaced with REPLACEMENT CHARACTER
 
-=item Line feed character found in array during Array::2D->tsv; converted to visible symbol
-
-=item Carriage return character found in array during Array::2D->tsv; converted to visible symbol
+=item Line feed character found assembling tab-separated values.  Replaced with REPLACEMENT CHARACTER
 
 An invalid character for TSV data was found in the array when creating 
-TSV data. It was converted to the Unicode visible symbol for that
-character, but this warning was issued.
+TSV data. It was replaced with the Unicode REPLACEMENT CHARACTER (U+FFFD).
 
 =back
 
