@@ -1545,15 +1545,15 @@ sub del_row {
     my $row_idx = shift;
 
     return () unless @{$self};
+    return () if $class->last_row($self) < $row_idx;
 
-    my @deleted;
     if ( defined wantarray ) {
-        @deleted = $class->row( $self, $row_idx );
+        my @deleted = $class->row( $self, $row_idx );
+        splice( @{$self}, $row_idx, 1 );
+        return @deleted;
     }
 
     splice( @{$self}, $row_idx, 1 );
-
-    return @deleted if defined wantarray;
     return;
 }
 
@@ -1566,7 +1566,16 @@ list of the elements of that column.
 
 sub del_col {
     my ( $class, $self ) = &$invocant_cr;
-    my $col_idx = @_;
+    my $col_idx = shift;
+
+    # handle negative col_idx
+    my $width = $class->width($self);
+    return () if $width <= $col_idx;
+
+    if ( $col_idx < -$width ) {
+        croak("$class->del_col: negative index off the beginning of the array");
+    }
+    $col_idx += $width if $col_idx < 0;
 
     my @deleted;
     if ( defined wantarray ) {
@@ -1579,7 +1588,7 @@ sub del_col {
 
     return @deleted if defined wantarray;
     return;
-}
+} ## tidy end: sub del_col
 
 =item B<del_rows(I<row_idx>, I<row_idx>...)>
 
@@ -1689,7 +1698,9 @@ elements of that column.
 
 sub pop_col {
     my ( $class, $self ) = &$invocant_cr;
+    return () unless @{$self};
     my $last_col = $class->last_col($self);
+    return () if -1 == $last_col;
     return $class->del_col( $self, $last_col );
 }
 
