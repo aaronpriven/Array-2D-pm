@@ -70,39 +70,44 @@ Because this object is just an array of arrays, most of the methods
 referring to rows are here mainly for completeness, and aren't 
 much more useful than the native Perl construction (e.g., C<<
 $array2d->last_row() >> is just a slower way of doing C<< $#{$array2d}
->>.) They will also typically be much slower.
+>>.) They will also typically be much slower. 
 
 On the other hand, most of the methods referring to columns are useful,
 since there's no simple way of fetching a column or columns in Perl.  
 
-Notably, the column
-methods are careful, when a row doesn't have an entry, to to fill out
-the column with undefined values up to the last defined value.
-In other words, if you have a column in an array-of-arrays of five rows, 
-and there's only a value in the fourth row, then that column, when
-returned, will look like ( undef, undef, undef, 'value'), 
-not just ('value').
+=head2 PADDING
 
-In general, however, the array is not always fully padded out -- undefined
-values are added at the beginning of each row to ensure that elements
-have the correct column indices, but they do not necessarily have
-values padded out to the highest column.  For example, the following would
-be valid:
+Because it is intended that the structure can be altered by standard
+Perl constructions, there is no guarantee that the object is either
+completely padded out so that every value within the structure's
+height and width has a value (undefined or not), alternatively
+completely pruned so that there are as few undefined values as
+possible.  The only padding that must exist is padding to ensure that
+the row and column indexes are correct for all defined values.
 
- [
+Other Perl code could change the padding state at any time, or leave
+it in an intermediate state (where some padding exists, but the
+padding is not complete).
+
+For example, the following would be valid:
+
+ $array2d = [
   [ undef, 1, 2 ],
-  [     3  ],
-  [     4, 6 ],
- ]
+       3  ],
+  [    4,  6, ],
+ ];
 
 The columns would be returned as (undef, 3, 4), (1, undef, 6), and (2). 
 
-The C<prune()> method will eliminate excess padding.  The C<pad()> method
-will pad out the array to the highest row and column with a defined value.
+There are methods to set padding -- the C<prune()> method
+will eliminate padding, and the C<pad> method will pad out
+the array to the highest row and column with a defined value.
 
-(Padding state is not guaranteed to be consistent because the array
-is designed to allow standard Perl constructs to apply to it, and those
-do not preserve padding state.)
+Methods that retrieve data will prune the data before returning it.
+
+Methods that delete rows or columns (del_*, shift_*, pop_*, and in void
+context, slice) will prune not only the returned data but also the 
+array itself.
 
 =cut
 
@@ -781,16 +786,16 @@ sub transpose {
 
 =item B<flattened()>
 
-Returns the array as a single, one-dimensional flat list. Note that
-it does not flatten any arrayrefs that are deep inside the 2D structure --
-just the rows and columns of the structure itself.
+Returns the array as a single, one-dimensional flat list of all the defined
+values. Note that it does not flatten any arrayrefs that are deep inside 
+the 2D structure -- just the rows and columns of the structure itself.
 
 =cut
 
 sub flattened {
     my ( $class, $self ) = &$invocant_cr;
     my @flattened = map { @{$_} } @$self;
-    return @flattened;
+    return grep { defined $_ } @flattened;
 }
 
 =back
@@ -904,7 +909,7 @@ sub row {
       and $row_idx <= $#{$self};
   # if empty, will test (0 <= $col_idx and $col_idx <= -1) which is always false
     my @row = @{ $self->[$row_idx] };
-    pop @row while @row and not defined $row[-1];
+    pop @row while @row and not defined $row[-1];    # prune
     return @row;
 }
 
@@ -933,7 +938,7 @@ sub col {
       = map { ( 0 <= $col_idx && $col_idx <= $#{$_} ) ? $_->[$col_idx] : undef }
       @{$self};
     # the element if it's valid in that row, otherwise undef
-    pop @col while @col and not defined $col[-1];
+    pop @col while @col and not defined $col[-1];    # prune
     return @col;
 } ## tidy end: sub col
 
@@ -1550,10 +1555,13 @@ sub del_row {
     if ( defined wantarray ) {
         my @deleted = $class->row( $self, $row_idx );
         splice( @{$self}, $row_idx, 1 );
+        $class->prune($self);
+        pop @deleted while @deleted and not defined $deleted[-1];    # prune
         return @deleted;
     }
 
     splice( @{$self}, $row_idx, 1 );
+    $class->prune($self);
     return;
 }
 
@@ -1580,11 +1588,13 @@ sub del_col {
     my @deleted;
     if ( defined wantarray ) {
         @deleted = $class->col( $self, $col_idx );
+        pop @deleted while @deleted and not defined $deleted[-1];    # prune
     }
 
     foreach my $row ( @{$self} ) {
         splice( @{$row}, $col_idx, 1 );
     }
+    $class->prune($self);
 
     return @deleted if defined wantarray;
     return;
@@ -1615,6 +1625,7 @@ sub del_rows {
         splice( @{$self}, $row_idx, 1 );
     }
 
+    $class->prune($self);
     return $deleted if defined wantarray;
     return;
 } ## tidy end: sub del_rows
@@ -1629,6 +1640,11 @@ Array::2D object of those columns.
 sub del_cols {
     my ( $class, $self ) = &$invocant_cr;
     my @col_idxs = @_;
+    
+    unless (@$self) {
+        return $class->empty if defined wantarray;
+        return;
+    }
 
     my $deleted;
     if ( defined wantarray ) {
@@ -1636,11 +1652,10 @@ sub del_cols {
     }
 
     foreach my $col_idx ( reverse sort @_ ) {
-        foreach my $row ( @{$self} ) {
-            splice( @{$row}, $col_idx, 1 );
-        }
+        $self->del_col($col_idx);
     }
 
+    $class->prune($self);
     return $deleted if defined wantarray;
     return;
 }
@@ -1657,6 +1672,7 @@ sub shift_row {
     return () unless @{$self};
     my @row = @{ shift @{$self} };
     pop @row while @row and not defined $row[-1];
+    $class->prune($self);
     return @row;
 }
 
@@ -1670,7 +1686,8 @@ elements of that column.
 sub shift_col {
     my ( $class, $self ) = &$invocant_cr;
     my @col = map { shift @{$_} } @{$self};
-    pop @col while @col and not defined $col[-1];
+    pop @col while @col and not defined $col[-1]; # prune
+    $class->prune($self);
     return @col;
 }
 
@@ -1685,7 +1702,8 @@ sub pop_row {
     my ( $class, $self ) = &$invocant_cr;
     return () unless @{$self};
     my @row = @{ pop @{$self} };
-    pop @row while @row and not defined $row[-1];
+    pop @row while @row and not defined $row[-1]; # prune
+    $class->prune($self);
     return @row;
 }
 
@@ -1701,6 +1719,7 @@ sub pop_col {
     return () unless @{$self};
     my $last_col = $class->last_col($self);
     return () if -1 == $last_col;
+    $class->prune($self);
     return $class->del_col( $self, $last_col );
 }
 
@@ -2523,6 +2542,10 @@ to implement these.
 =item *
 
 splice_row() and splice_col()
+
+=item *
+
+Alternatives to the methods that result in padded rather than pruned data.
 
 =item *
 
