@@ -27,6 +27,15 @@ sub test_deletion {
     my $ref_to_test = Array::2D->clone_unblessed($test_array);
 
     my @obj_returned = $obj_to_test->$method(@indices);
+
+    #if ( $description =~ /delete long column/ ) {
+    #    note "index: @indices";
+    #    note "returned:";
+    #    note explain \@obj_returned;
+    #    note "remaining:";
+    #    note explain $obj_to_test;
+    #}
+
     is_deeply( \@obj_returned, $expected, "$method: $description: object" );
     is_deeply( $obj_to_test, $remain,
         "... and remaining values are as expected" );
@@ -34,10 +43,8 @@ sub test_deletion {
 
     my @ref_returned = Array::2D->$method( $ref_to_test, @indices );
     is_deeply( \@ref_returned, $expected, "$method: $description: ref" );
-    is_deeply(
-        $ref_to_test, $remain,
-        "... and remaining values are as expected"
-    );
+    is_deeply( $ref_to_test, $remain,
+        "... and remaining values are as expected" );
     isnt_blessed($ref_to_test);
 } ## tidy end: sub test_deletion
 
@@ -55,7 +62,7 @@ my %tests = (
             description => 'delete middle row',
             test_array  => $del_row_ref,
         },
-        {   indices  => [4],
+        {   indices  => [3],
             expected => [ 'd', 4, 'z' ],
             remain   => [ [ 'a', 1, 'w' ], [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], ],
             description => 'delete last row',
@@ -109,12 +116,18 @@ my %tests = (
                 [ 'd', 4,     'z' ],
             ]
         },
+        {   indices     => [0],
+            expected    => [ 'a', 1 ],
+            remain      => [],
+            description => 'delete only row',
+            test_array  => [ [ 'a', 1 ] ],
+        },
     ],
     del_col => [
         {   indices     => [0],
             expected    => [ 'a', 1, 'w' ],
             remain      => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], ],
-            description => 'delete first col',
+            description => 'delete first column',
             test_array  => $del_col_ref,
         },
         {   indices     => [1],
@@ -123,7 +136,7 @@ my %tests = (
             description => 'delete middle column',
             test_array  => $del_col_ref,
         },
-        {   indices     => [4],
+        {   indices     => [3],
             expected    => [ 'd', 4, 'z' ],
             remain      => [ [qw/a b c/], [ 1, 2, 3, ], [qw/w x y/], ],
             description => 'delete last column',
@@ -131,7 +144,7 @@ my %tests = (
         },
         {   indices     => [-2],
             expected    => [ 'c', 3, 'y' ],
-            remain      => [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y z/], ],
+            remain      => [ [qw/a b d/], [ 1, 2, 4 ], [qw/w x z/], ],
             description => 'delete column (negative index)',
             test_array  => $del_col_ref,
         },
@@ -156,7 +169,7 @@ my %tests = (
         },
         {   indices     => [1],
             expected    => [ 'b', 2, 'x', 9 ],
-            remain      => [ [qw/a c d/], [ 1, 3, 4 ], [qw/w y z/], ],
+            remain      => [ [qw/a c d/], [ 1, 3, 4 ], [qw/w y z/], [undef], ],
             description => 'delete long column',
             test_array =>
               [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y z/], [ undef, 9 ], ],
@@ -167,6 +180,13 @@ my %tests = (
             remain      => [ [qw/a c d/], [ 1, 3, 4 ], [qw/w y z/], ],
             description => 'delete column with undefined value',
             test_array => [ [qw/a b c d/], [ 1, undef, 3, 4 ], [qw/w x y z/], ],
+        },
+
+        {   indices     => [0],
+            expected    => [ 'a', 1 ],
+            remain      => [ [], [] ],
+            description => 'delete only column',
+            test_array  => [ ['a'], [1] ],
         },
     ],
     shift_row => [
@@ -180,17 +200,15 @@ my %tests = (
             description => 'shift row from empty array',
             test_array  => [],
         },
-        {   indices     => [1],
-            expected    => [ 'a', 1 ],
-            remain      => [ [ 'c', 3, 'y' ], [ 'd', 4, 'z' ], ],
+        {   expected => [ 'a', 1 ],
+            remain => [ [ 'b', 2, 'x', ], [ 'c', 3, 'y', ], [ 'd', 4, 'z', ], ],
             description => 'shift short row',
             test_array  => [
                 [ 'a', 1 ], [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], [ 'd', 4, 'z' ],
             ]
         },
-        {   indices  => [1],
-            expected => [ 'a', 1, 'w', 9 ],
-            remain   => [ [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], [ 'd', 4, 'z' ], ],
+        {   expected => [ 'a', 1, 'w', 9 ],
+            remain => [ [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], [ 'd', 4, 'z' ], ],
             description => 'shift long row',
             test_array  => [
                 [ 'a', 1, 'w', 9 ],
@@ -199,9 +217,8 @@ my %tests = (
                 [ 'd', 4, 'z' ],
             ]
         },
-        {   indices  => [1],
-            expected => [ 'a', undef, 'w' ],
-            remain   => [ [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], [ 'd', 4, 'z' ], ],
+        {   expected => [ 'a', undef, 'w' ],
+            remain => [ [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], [ 'd', 4, 'z' ], ],
             description => 'shift row with undefined value',
             test_array  => [
                 [ 'a', undef, 'w' ],
@@ -210,10 +227,134 @@ my %tests = (
                 [ 'd', 4,     'z' ],
             ]
         },
+        {   expected    => [ 'a', 1 ],
+            remain      => [],
+            description => 'shift only row',
+            test_array => [ [ 'a', 1 ] ],
+        },
     ],
-    shift_col => [],
-    pop_row   => [],
-    pop_col   => [],
+    shift_col => [
+        {   expected => [ 'a', 1, 'w' ],
+            remain => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], ],
+            description => 'shift first column',
+            test_array  => $del_col_ref,
+        },
+        {   expected    => [],
+            remain      => [],
+            description => 'shift column from empty array',
+            test_array  => [],
+        },
+        {   expected => [ 'a', 1 ],
+            remain => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], ],
+            description => 'shift short column',
+            test_array =>
+              [ [qw/a b c d/], [ 1, 2, 3, 4 ], [ undef, qw/x y z/ ], ],
+        },
+        {   expected => [ 'a', 1, 'w', 9 ],
+            remain => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], [], ],
+            description => 'shift long column',
+            test_array =>
+              [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y z/], [9], ],
+
+        },
+        {   expected => [ 'a', undef, 'w' ],
+            remain => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], ],
+            description => 'shift column with undefined value',
+            test_array => [ [qw/a b c d/], [ undef, 2, 3, 4 ], [qw/w x y z/], ],
+        },
+        {   expected => [ 'a', 1 ],
+            remain => [ [], [] ],
+            description => 'shift only column',
+            test_array  => [ ['a'], [1] ],
+        },
+    ],
+    pop_row => [
+        {   expected => [ 'd', 4, 'z' ],
+            remain => [ [ 'a', 1, 'w' ], [ 'b', 2, 'x' ], [ 'c', 3, 'y' ], ],
+            description => 'pop last row',
+            test_array  => $del_row_ref,
+        },
+        {   expected    => [],
+            remain      => [],
+            description => 'pop row from empty array',
+            test_array  => [],
+        },
+        {   expected => [ 'd', 4 ],
+            remain => [ [ 'a', 1, 'w' ], [ 'b', 2, 'x', ], [ 'c', 3, 'y', ], ],
+            description => 'pop short row',
+            test_array  => [
+                [ 'a', 1, 'w' ],
+                [ 'b', 2, 'x' ],
+                [ 'c', 3, 'y' ],
+                [ 'd', 4, ],
+            ]
+        },
+        {   description => 'pop long row',
+            expected    => [ 'd', 4, 'z', 9 ],
+            remain => [ [ 'a', 1, 'w' ], [ 'b', 2, 'x', ], [ 'c', 3, 'y', ], ],
+            test_array => [
+                [ 'a', 1, 'w' ],
+                [ 'b', 2, 'x' ],
+                [ 'c', 3, 'y' ],
+                [ 'd', 4, 'z', 9 ],
+              ]
+
+        },
+        {   description => 'pop row with undefined value',
+            expected    => [ 'd', undef, 'z', ],
+            remain => [ [ 'a', 1, 'w' ], [ 'b', 2, 'x', ], [ 'c', 3, 'y', ], ],
+            test_array => [
+                [ 'a', 1,     'w' ],
+                [ 'b', 2,     'x' ],
+                [ 'c', 3,     'y' ],
+                [ 'd', undef, 'z' ],
+            ]
+        },
+        {   expected    => [ 'a', 1 ],
+            remain      => [],
+            description => 'pop only row',
+            test_array => [ [ 'a', 1 ] ],
+        },
+    ],
+    pop_col => [
+        {   expected => [ 'd', 4, 'z' ],
+            remain => [ [qw/a b c/], [ 1, 2, 3, ], [qw/w x y/], ],
+            description => 'pop last column',
+            test_array  => $del_col_ref,
+        },
+        {   expected    => [],
+            remain      => [],
+            description => 'pop column from empty array',
+            test_array  => [],
+        },
+        {   expected => [ 'd', 4 ],
+            remain => [ [qw/a b c/], [ 1, 2, 3 ], [qw/w x y/], ],
+            description => 'pop short column',
+            test_array  => [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y/], ],
+        },
+        {   expected => [ 'd', 4, 'z', 9 ],
+            remain   => [
+                [qw/a b c/], [ 1,     2,     3 ],
+                [qw/w x y/], [ undef, undef, undef ],
+            ],
+            description => 'pop long column',
+            test_array  => [
+                [qw/a b c d/], [ 1,     2,     3,     4 ],
+                [qw/w x y z/], [ undef, undef, undef, 9 ],
+            ],
+
+        },
+        {   expected => [ 'd', undef, 'z' ],
+            remain => [ [qw/a b c/], [ 1, 2, 3 ], [qw/w x y/], ],
+            description => 'pop column with undefined value',
+            test_array  => [ [qw/a b c d/], [ 1, 2, 3 ], [qw/w x y z/], ],
+        },
+        {   expected => [ 'a', 1 ],
+            remain => [ [], [] ],
+            description => 'pop only column',
+            test_array  => [ ['a'], [1] ],
+        },
+    ],
 );
 
 my %exception_tests = (
@@ -227,6 +368,7 @@ foreach my $method (qw/del_row del_col pop_row pop_col shift_row shift_col/) {
     for my $test_r ( @{ $tests{$method} } ) {
         test_deletion( $method, $test_r );
     }
+
     next if ( $method !~ /del/ );
 
     my $del_die_obj = Array::2D->clone($del_row_ref);
@@ -242,28 +384,9 @@ foreach my $method (qw/del_row del_col pop_row pop_col shift_row shift_col/) {
 
 } ## tidy end: foreach my $method (...)
 
-a2dcan('del_row');
-# low
+# both low
+foreach my $method (qw/del_rows del_cols/) {
+    a2dcan($method);
 
-a2dcan('del_col');
-# low
-
-a2dcan('shift_row');
-# high
-
-a2dcan('shift_col');
-# low
-
-a2dcan('pop_row');
-# low
-
-a2dcan('pop_col');
-# low
-
-a2dcan('del_rows');
-# low
-
-a2dcan('del_cols');
-# low
-
+}
 done_testing;
