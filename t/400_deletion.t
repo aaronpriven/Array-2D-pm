@@ -169,7 +169,7 @@ my %tests = (
         },
         {   indices     => [1],
             expected    => [ 'b', 2, 'x', 9 ],
-            remain      => [ [qw/a c d/], [ 1, 3, 4 ], [qw/w y z/], [undef], ],
+            remain      => [ [qw/a c d/], [ 1, 3, 4 ], [qw/w y z/], ],
             description => 'delete long column',
             test_array =>
               [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y z/], [ undef, 9 ], ],
@@ -184,7 +184,7 @@ my %tests = (
 
         {   indices     => [0],
             expected    => [ 'a', 1 ],
-            remain      => [ [], [] ],
+            remain      => [],
             description => 'delete only column',
             test_array  => [ ['a'], [1] ],
         },
@@ -251,7 +251,7 @@ my %tests = (
               [ [qw/a b c d/], [ 1, 2, 3, 4 ], [ undef, qw/x y z/ ], ],
         },
         {   expected => [ 'a', 1, 'w', 9 ],
-            remain => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], [], ],
+            remain => [ [qw/b c d/], [ 2, 3, 4 ], [qw/x y z/], ],
             description => 'shift long column',
             test_array =>
               [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y z/], [9], ],
@@ -262,10 +262,10 @@ my %tests = (
             description => 'shift column with undefined value',
             test_array => [ [qw/a b c d/], [ undef, 2, 3, 4 ], [qw/w x y z/], ],
         },
-        {   expected => [ 'a', 1 ],
-            remain => [ [], [] ],
+        {   expected    => [ 'a', 1 ],
+            remain      => [],
             description => 'shift only column',
-            test_array  => [ ['a'], [1] ],
+            test_array => [ ['a'], [1] ],
         },
     ],
     pop_row => [
@@ -333,10 +333,7 @@ my %tests = (
             test_array  => [ [qw/a b c d/], [ 1, 2, 3, 4 ], [qw/w x y/], ],
         },
         {   expected => [ 'd', 4, 'z', 9 ],
-            remain   => [
-                [qw/a b c/], [ 1,     2,     3 ],
-                [qw/w x y/], [ undef, undef, undef ],
-            ],
+            remain => [ [qw/a b c/], [ 1, 2, 3 ], [qw/w x y/], ],
             description => 'pop long column',
             test_array  => [
                 [qw/a b c d/], [ 1,     2,     3,     4 ],
@@ -349,10 +346,10 @@ my %tests = (
             description => 'pop column with undefined value',
             test_array  => [ [qw/a b c d/], [ 1, 2, 3 ], [qw/w x y z/], ],
         },
-        {   expected => [ 'a', 1 ],
-            remain => [ [], [] ],
+        {   expected    => [ 'a', 1 ],
+            remain      => [],
             description => 'pop only column',
-            test_array  => [ ['a'], [1] ],
+            test_array => [ ['a'], [1] ],
         },
     ],
 );
