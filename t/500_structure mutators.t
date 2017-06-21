@@ -12,9 +12,8 @@ a2dcan('transpose');
 # low
 
 a2dcan('flattened');
-# high
 
-my @tests = (
+my @flatten_tests = (
     {   test_array => [ [qw/a b c/], [ 1, 2, 3, ], [qw/x y z/] ],
         flat        => [ qw/a b c/, 1, 2, 3, qw/x y z/ ],
         description => 'flatten rectangular array',
@@ -38,7 +37,7 @@ my @tests = (
 
 );
 
-foreach my $test_r (@tests) {
+foreach my $test_r (@flatten_tests) {
 
     my $expected    = $test_r->{flat};
     my $description = $test_r->{description};
