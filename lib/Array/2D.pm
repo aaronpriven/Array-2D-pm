@@ -2504,12 +2504,18 @@ TSV data. It was replaced with the Unicode REPLACEMENT CHARACTER (U+FFFD).
 
 =head1 TO DO
 
+This is just a list of things that would be nice -- there's no current plan
+to implement these.
+
 =over
 
 =item *
 
-Add CSV (and possibly other file type) support to C<new_from_file()> 
-and C<file()>.
+splice_row() and splice_col()
+
+=item *
+
+CSV, JSON, maybe other file types in C<new_from_file()> and C<file()>.
 
 =back
 
