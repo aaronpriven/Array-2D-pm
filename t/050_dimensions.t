@@ -24,7 +24,7 @@ my @subjects = (
 );
 
 plan tests => ( @methods + 1 ) * ( @subjects * 2 + 1 );
-# add one method for is_empty and one subject for test_can
+# add one method (is_empty) and one subject (a2dcan)
 
 a2dcan('is_empty');
 
