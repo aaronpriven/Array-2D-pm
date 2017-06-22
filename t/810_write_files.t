@@ -8,6 +8,7 @@ BEGIN {
 
 a2dcan('tsv_lines');
 # high
+# tsv_lines uses Ref::Util
 
 a2dcan('tsv');
 # high
