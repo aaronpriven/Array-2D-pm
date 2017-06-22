@@ -1,6 +1,8 @@
 use strict;
+use utf8;
 use warnings;
 use Test::More;
+use Test::Warn;
 
 my $tab_test = [
     [qw/one two three four/],     [qw/five six seven eight/],
@@ -15,19 +17,44 @@ sub test_tabulation {
     my $expected    = $test_r->{expected};
     my $description = $test_r->{description};
     my $test_array  = $test_r->{test_array} // $tab_test;
-    my @separator;
-    my $separator = $test_r->{separator};
-    push @separator, $separator if defined $separator;
+    my $separator   = $test_r->{separator};
+    my $headers_r   = $test_r->{headers};
+    my $warning     = $test_r->{warning};
+    my @arguments;
+    if ( defined $separator ) {
+        @arguments = ($separator);
+    }
+    elsif ( defined $headers_r ) {
+        @arguments = @{$headers_r};
+    }
 
     my $obj_to_test = Array::2D->clone($test_array);
     my $ref_to_test = Array::2D->clone_unblessed($test_array);
 
-    my $obj_returned = $obj_to_test->$method(@separator);
+    my ( $obj_returned, $ref_returned );
 
-    is_deeply( $obj_returned, $expected, "$method: $description: object" );
+    if ($warning) {
+        warning_like { $obj_returned = $obj_to_test->$method(@arguments) }
+        { carped => $warning }, "$method: $description: object: gave warning";
+    }
+    else {
+        $obj_returned = $obj_to_test->$method(@arguments);
+    }
 
-    my $ref_returned = Array::2D->$method( $ref_to_test, @separator );
-    is_deeply( $ref_returned, $expected, "$method: $description: ref" );
+    is_deeply( $obj_returned, $expected,
+        "$method: $description: object: correct" );
+
+    if ($warning) {
+        warning_like {
+            $ref_returned = Array::2D->$method( $ref_to_test, @arguments )
+        }
+        { carped => $warning }, "$method: $description: ref: gave warning";
+    }
+    else {
+        $ref_returned = Array::2D->$method( $ref_to_test, @arguments );
+    }
+    is_deeply( $ref_returned, $expected,
+        "$method: $description: ref: correct" );
 
     return;
 } ## tidy end: sub test_tabulation
@@ -219,9 +246,171 @@ my %tests = (
             ],
         },
     ],
-);
 
-#note explain \@tabulated_tests;
+    tsv_lines => [
+        {   description => 'an array',
+            expected    => [
+                "one\ttwo\tthree\tfour",     "five\tsix\tseven\teight",
+                "nine\tten\televen\ttwelve", "thirteen\t14\tfifteen",
+            ],
+        },
+        {   description => 'an array (with headers)',
+            headers     => [qw/Spring Summer Fall Winter/],
+            expected    => [
+                "Spring\tSummer\tFall\tWinter", "one\ttwo\tthree\tfour",
+                "five\tsix\tseven\teight",      "nine\tten\televen\ttwelve",
+                "thirteen\t14\tfifteen",
+            ],
+        },
+        {   description => 'an array with empty strings',
+            test_array  => [
+                [ qw/one two/, '', 'four' ], [qw/five six seven eight/],
+                [ qw/nine ten eleven/, '' ], [qw/thirteen 14 fifteen/],
+            ],
+            expected => [
+                "one\ttwo\t\tfour",  "five\tsix\tseven\teight",
+                "nine\tten\televen", "thirteen\t14\tfifteen",
+            ],
+        },
+        {   description => 'an array with undefined values',
+            test_array  => [
+                [ qw/one two/, undef, 'four' ], [qw/five six seven eight/],
+                [ qw/nine ten eleven/, undef ], [qw/thirteen 14 fifteen/],
+            ],
+            expected => [
+                "one\ttwo\t\tfour",  "five\tsix\tseven\teight",
+                "nine\tten\televen", "thirteen\t14\tfifteen",
+            ],
+        },
+        {   description => 'a ragged array',
+            test_array  => [
+                [ undef, qw/two three four/ ], [qw/five six seven/],
+                [ qw/nine ten eleven/, undef ], [qw/thirteen/],
+            ],
+            expected => [
+                "\ttwo\tthree\tfour", "five\tsix\tseven",
+                "nine\tten\televen",  "thirteen",
+            ],
+        },
+        {   description => 'a one-column array',
+            test_array  => [ ['one'], ['five'], ['nine'], ['thirteen'], ],
+            expected => [ 'one', 'five', 'nine', 'thirteen', ],
+        },
+        {   description => 'a one-row array',
+            test_array  => [ [qw/one two three four/] ],
+            expected    => ["one\ttwo\tthree\tfour"],
+        },
+        {   description => 'an empty array',
+            test_array  => [ [] ],
+            expected    => [''],
+        },
+        {   description => 'an empty array, with headers',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [ [] ],
+            expected    => [ "Spring\tSummer\tFall\tWinter", '' ],
+        },
+        {   description => 'an array with an empty row',
+            test_array  => [
+                [qw/one two three/],   [],
+                [qw/nine ten eleven/], [qw/thirteen 14 fifteen/],
+            ],
+            expected => [
+                "one\ttwo\tthree",   '',
+                "nine\tten\televen", "thirteen\t14\tfifteen",
+            ],
+        },
+        {   description => 'an array with an empty row, with headers',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [
+                [qw/one two three/],   [],
+                [qw/nine ten eleven/], [qw/thirteen 14 fifteen/],
+            ],
+            expected => [
+                "Spring\tSummer\tFall\tWinter", "one\ttwo\tthree",
+                '',                             "nine\tten\televen",
+                "thirteen\t14\tfifteen",
+            ],
+        },
+        {   description => 'an array with an empty column',
+            test_array  => [
+                [ qw/one two/,  '',    'four' ],
+                [ qw/five six/, undef, 'eight' ],
+                [ qw/nine ten/, '',    'twelve' ],
+                [qw/thirteen 14/],
+            ],
+            expected => [
+                "one\ttwo\t\tfour",    "five\tsix\t\teight",
+                "nine\tten\t\ttwelve", "thirteen\t14",
+            ],
+        },
+        {   description => 'an array with an empty column and headers',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [
+                [ qw/one two/,  '',    'four' ],
+                [ qw/five six/, undef, 'eight' ],
+                [ qw/nine ten/, '',    'twelve' ],
+                [qw/thirteen 14/],
+            ],
+            expected => [
+                "Spring\tSummer\tFall\tWinter", "one\ttwo\t\tfour",
+                "five\tsix\t\teight",           "nine\tten\t\ttwelve",
+                "thirteen\t14",
+            ],
+        },
+        {   description => 'embedded tab in body',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [ [ qw/one two/, "thr\tee", 'four' ], ],
+            warning     => qr/Tab character found/,
+            expected    => [
+                "Spring\tSummer\tFall\tWinter",
+                "one\ttwo\tthr\x{FFFD}ee\tfour",
+            ],
+        },
+        {   description => 'two embedded tabs in body',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [ [ qw/one two/, "thr\tee", "f\tour" ], ],
+            warning     => qr/Tab character found/,
+            expected    => [
+                "Spring\tSummer\tFall\tWinter",
+                "one\ttwo\tthr\x{FFFD}ee\tf\x{FFFD}our",
+            ],
+        },
+        {   description => 'embedded tab in header',
+            headers     => [ qw/Spring Summer/, "Fa\tll", 'Winter' ],
+            test_array  => [ [ qw/one two/, "three", 'four' ], ],
+            warning     => qr/Tab character found/,
+            expected    => [
+                "Spring\tSummer\tFa\x{FFFD}ll\tWinter",
+                "one\ttwo\tthree\tfour",
+            ],
+        },
+    ],
+
+    tsv => [
+        {   description => 'embedded line feed in body',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [ [ qw/one two/, "thr\nee", 'four' ], ],
+            warning     => qr/Line feed character found/,
+            expected =>
+              "Spring\tSummer\tFall\tWinter\none\ttwo\tthr\x{FFFD}ee\tfour\n",
+        },
+        {   description => 'two embedded line feeds in body',
+            headers     => [qw/Spring Summer Fall Winter/],
+            test_array  => [ [ qw/one two/, "thr\nee", "f\nour" ], ],
+            warning     => qr/Line feed character found/,
+            expected    => "Spring\tSummer\tFall\tWinter\n"
+              . "one\ttwo\tthr\x{FFFD}ee\tf\x{FFFD}our\n",
+        },
+        {   description => 'embedded line feed in header',
+            headers     => [ qw/Spring Summer/, "Fa\nll", 'Winter' ],
+            test_array  => [ [ qw/one two/, "three", 'four' ], ],
+            warning     => qr/Line feed character found/,
+            expected =>
+              "Spring\tSummer\tFa\x{FFFD}ll\tWinter\none\ttwo\tthree\tfour\n",
+        },
+    ],
+
+);
 
 my @term_width_list = (
     qw/addfields avl2patdest avl2points avl2stoplines avl2stoplists
@@ -282,7 +471,6 @@ my @term_width_tests = (
         ],
         width => 60,
     },
-
     {   description => 'made new with separator',
         separator   => '|',
         tabulated   => [
@@ -300,29 +488,36 @@ my @term_width_tests = (
 );
 
 sub run_tabulation_tests {
-    
-    if ($_[0] and $_[0] =~ /skip/i) {
+
+    if ( $_[0] and $_[0] =~ /skip/i ) {
         plan skip_all => 'Unicode::GCString not available';
         done_testing;
         return;
     }
-    
+
     # So the idea is that when this module is loaded, it will set the
     # %tests and @term_width_tests variables. The loading module
     # can then add whatever tests it feels are appropriate.
-    # Finally, the loading module runs run_tabulation_tests to carry 
+    # Finally, the loading module runs run_tabulation_tests to carry
     # out the tests.
 
     # generate tests of tabulated() method from tests of tabulate() method
 
-    my @tabulated_tests;
-    foreach my $test_r ( @{ $tests{tabulate} } ) {
-        my %tabulated_test = %{$test_r};
-        $tabulated_test{expected}
-          = join( "\n", @{ $tabulated_test{expected} } ) . "\n";
-        push @tabulated_tests, \%tabulated_test;
+    my %to_add_lf = ( tsv_lines => 'tsv', tabulate => 'tabulated' );
+
+    foreach my $no_lf_method ( keys %to_add_lf ) {
+        my $lf_method = $to_add_lf{$no_lf_method};
+        my @tests;
+
+        foreach my $test_r ( @{ $tests{$no_lf_method} } ) {
+            my %lf_test = %{$test_r};
+            $lf_test{expected}
+              = join( "\n", @{ $lf_test{expected} } ) . "\n";
+            push @tests, \%lf_test;
+        }
+        push @{ $tests{$lf_method} }, @tests;
+
     }
-    $tests{tabulated} = \@tabulated_tests;
 
     # count all the tests and set the Test::More plan to that count
 
@@ -332,19 +527,25 @@ sub run_tabulation_tests {
 
     foreach my $method ( keys %tests ) {
         $test_count += ( 2 * scalar @{ $tests{$method} } );
+        foreach my $test_r ( @{ $tests{$method} } ) {
+            $test_count += 2 if exists $test_r->{warning};
+        }
         # two tests (obj and ref) per test in %tests
+        # four tests (obj and ref, warning and result) per test in
+        #  %warning_tests
     }
 
     plan( tests => $test_count );
 
     # run the main tests (tabulate, tabulated, tabulate_equal_width)
 
-    foreach my $method ( keys %tests ) {
+    foreach my $method ( sort keys %tests ) {
         a2dcan($method);
 
         for my $test_r ( @{ $tests{$method} } ) {
             test_tabulation( $method, $test_r );
         }
+
     }
 
     # run tests for new_to_term_width
