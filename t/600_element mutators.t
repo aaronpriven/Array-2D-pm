@@ -160,7 +160,6 @@ foreach my $method ( keys %tests ) {
 
 plan( tests => ( 4 + ( 8 * $test_count ) ) );
 
-# all high
 foreach my $method (qw/apply trim trim_right define/) {
     a2dcan($method);
 

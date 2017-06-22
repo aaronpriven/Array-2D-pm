@@ -6,6 +6,9 @@ BEGIN {
       // die "Can't load array-2d.pl";
 }
 
+a2dcan('tsv_lines');
+# high
+
 a2dcan('tsv');
 # high
 
