@@ -1,11 +1,6 @@
 use strict;
 use warnings;
-use utf8;
-
-BEGIN {
-    do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
-      // die "Can't load array-2d.pl";
-}
+use Test::More;
 
 my $tab_test = [
     [qw/one two three four/],     [qw/five six seven eight/],
@@ -226,15 +221,6 @@ my %tests = (
     ],
 );
 
-my @tabulated_tests;
-foreach my $test_r ( @{ $tests{tabulate} } ) {
-    my %tabulated_test = %{$test_r};
-    $tabulated_test{expected}
-      = join( "\n", @{ $tabulated_test{expected} } ) . "\n";
-    push @tabulated_tests, \%tabulated_test;
-}
-$tests{tabulated} = \@tabulated_tests;
-
 #note explain \@tabulated_tests;
 
 my @term_width_list = (
@@ -300,8 +286,7 @@ my @term_width_tests = (
     {   description => 'made new with separator',
         separator   => '|',
         tabulated   => [
-            "addfields    |compareskeds |iphoto_stops |orderbytravel|timetables"
-            ,
+"addfields    |compareskeds |iphoto_stops |orderbytravel|timetables",
 "avl2patdest  |comparestops |linedescrip  |prepareflags |xhea2skeds",
             "avl2points   |dbexport     |linesbycity  |slists2html  |zipcodes",
             "avl2stoplines|decalcompare |makepoints   |ss           |zipdecals",
@@ -314,34 +299,73 @@ my @term_width_tests = (
 
 );
 
-foreach my $method (qw/tabulate tabulated tabulate_equal_width/) {
-    a2dcan($method);
+sub run_tabulation_tests {
+    
+    # So the idea is that when this module is loaded, it will set the
+    # %tests and @term_width_tests variables. The loading module
+    # can then add whatever tests it feels are appropriate.
+    # Finally, the loading module runs run_tabulation_tests to carry 
+    # out the tests.
 
-    for my $test_r ( @{ $tests{$method} } ) {
-        test_tabulation( $method, $test_r );
+    # generate tests of tabulated() method from tests of tabulate() method
+
+    my @tabulated_tests;
+    foreach my $test_r ( @{ $tests{tabulate} } ) {
+        my %tabulated_test = %{$test_r};
+        $tabulated_test{expected}
+          = join( "\n", @{ $tabulated_test{expected} } ) . "\n";
+        push @tabulated_tests, \%tabulated_test;
     }
-}
+    $tests{tabulated} = \@tabulated_tests;
 
-a2dcan('new_to_term_width');
+    # count all the tests and set the Test::More plan to that count
 
-for my $test_r (@term_width_tests) {
+    my $test_count = ( scalar keys %tests ) + 1 + ( 2 * @term_width_tests );
+    # methods in keys %tests, plus new_to_term_width,
+    # plus 2 tests (obj and tabulation) for everything in @term_width_tests
 
-    my $expected       = $test_r->{expected} // $term_width_ref;
-    my $tabulated_test = $test_r->{tabulated};
-    my $description    = $test_r->{description};
-    my %params;
-    $params{array} = $test_r->{list} // [@term_width_list];
-    $params{width} = $test_r->{width} if defined $test_r->{width};
-    $params{separator} = $test_r->{separator}
-      if defined $test_r->{separator};
+    foreach my $method ( keys %tests ) {
+        $test_count += ( 2 * scalar @{ $tests{$method} } );
+        # two tests (obj and ref) per test in %tests
+    }
 
-    my ( $array2d_result, $tabulated_result )
-      = Array::2D->new_to_term_width(%params);
-    is_deeply( $array2d_result, $expected,
-        "new from term width: $description: got object" );
-    is_deeply( $tabulated_result, $tabulated_test,
-        "new_from_term_width: $description: got tabulation" );
+    plan( tests => $test_count );
 
-}
+    # run the main tests (tabulate, tabulated, tabulate_equal_width)
 
-done_testing;
+    foreach my $method ( keys %tests ) {
+        a2dcan($method);
+
+        for my $test_r ( @{ $tests{$method} } ) {
+            test_tabulation( $method, $test_r );
+        }
+    }
+
+    # run tests for new_to_term_width
+
+    a2dcan('new_to_term_width');
+
+    for my $test_r (@term_width_tests) {
+
+        my $expected       = $test_r->{expected} // $term_width_ref;
+        my $tabulated_test = $test_r->{tabulated};
+        my $description    = $test_r->{description};
+        my %params;
+        $params{array} = $test_r->{list} // [@term_width_list];
+        $params{width} = $test_r->{width} if defined $test_r->{width};
+        $params{separator} = $test_r->{separator}
+          if defined $test_r->{separator};
+
+        my ( $array2d_result, $tabulated_result )
+          = Array::2D->new_to_term_width(%params);
+        is_deeply( $array2d_result, $expected,
+            "new from term width: $description: got object" );
+        is_deeply( $tabulated_result, $tabulated_test,
+            "new_from_term_width: $description: got tabulation" );
+
+    }
+
+    done_testing;
+
+} ## tidy end: sub run_tabulation_tests
+
