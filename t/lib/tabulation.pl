@@ -302,7 +302,7 @@ my @term_width_tests = (
 sub run_tabulation_tests {
     
     if ($_[0] and $_[0] =~ /skip/i) {
-        plan skip_all => 'No Unicode::GCString';
+        plan skip_all => 'Unicode::GCString not available';
         done_testing;
         return;
     }

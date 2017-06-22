@@ -21,6 +21,12 @@ my @subjects = (
 
 sub test_dimensions {
 
+    if ( $_[0] and $_[0] =~ /skip/i ) {
+        plan skip_all => 'Ref::Util not available';
+        done_testing;
+        return;
+    }
+
     plan tests => ( @methods + 1 ) * ( @subjects * 2 + 1 );
     # add one method (is_empty) and one subject (a2dcan)
 

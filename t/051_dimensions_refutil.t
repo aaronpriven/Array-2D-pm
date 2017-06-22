@@ -3,7 +3,6 @@ use warnings;
 use Test::More 0.98;
 
 BEGIN {
-
     do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
       // die "Can't load array-2d.pl";
     do './t/lib/dimensions.pl' // do './lib/dimensions.pl'

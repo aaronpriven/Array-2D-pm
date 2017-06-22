@@ -24,7 +24,7 @@ sub isnt_blessed {
 sub test_simple_construction {
     
      if ($_[0] and $_[0] =~ /skip/i) {
-        plan skip_all => 'No Ref::Util';
+        plan skip_all => 'Ref::Util not available';
         done_testing;
         return;
     } 
