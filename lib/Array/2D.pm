@@ -1,3 +1,5 @@
+## no critic (ProhibitExcessMainComplexity)
+# it thinks all the code in $x = sub {...} is in the main module
 package Array::2D;
 use 5.008001;
 use strict;
@@ -158,6 +160,7 @@ $text_columns_cr = sub {
 
     if ( !$impl && eval { require Unicode::GCString; 1 } ) {
         $text_columns_cr = sub {
+            return 0 unless defined $_[0];
             return Unicode::GCString->new("$_[0]")->columns;
             # explicit stringification is necessary
             # since Unicode::GCString doesn't automatically
@@ -166,6 +169,7 @@ $text_columns_cr = sub {
     }
     else {
         $text_columns_cr = sub {
+            return 0 unless defined $_[0];
             return length( $_[0] );
         };
     }
@@ -1640,7 +1644,7 @@ Array::2D object of those columns.
 sub del_cols {
     my ( $class, $self ) = &$invocant_cr;
     my @col_idxs = @_;
-    
+
     unless (@$self) {
         return $class->empty if defined wantarray;
         return;
@@ -1658,7 +1662,7 @@ sub del_cols {
     $class->prune($self);
     return $deleted if defined wantarray;
     return;
-}
+} ## tidy end: sub del_cols
 
 =item B<shift_row()>
 
@@ -1686,7 +1690,7 @@ elements of that column.
 sub shift_col {
     my ( $class, $self ) = &$invocant_cr;
     my @col = map { shift @{$_} } @{$self};
-    pop @col while @col and not defined $col[-1]; # prune
+    pop @col while @col and not defined $col[-1];    # prune
     $class->prune($self);
     return @col;
 }
@@ -1702,7 +1706,7 @@ sub pop_row {
     my ( $class, $self ) = &$invocant_cr;
     return () unless @{$self};
     my @row = @{ pop @{$self} };
-    pop @row while @row and not defined $row[-1]; # prune
+    pop @row while @row and not defined $row[-1];    # prune
     $class->prune($self);
     return @row;
 }
@@ -2127,48 +2131,91 @@ So, for example,
  # $arrayref = [ 'a    bbb cc' ,
  #               'dddd e   f'
  #             ];
+ 
+=item B<tabulate_equal_width(I<separator>)>
+
+Like C<tabulate()>, but instead of each column having its own width,
+all columns have the same width.
 
 =cut
 
-sub tabulate {
-    my ( $class, $orig ) = &$invocant_cr;
-    my $self = $class->define($orig);
+{
+    my $equal_width;
 
-    my $separator = shift // q[ ];
-    my @length_of_col;
+    my $prune_space_list_cr = sub {
+        my @cells = @_;
 
-    foreach my $row ( @{$self} ) {
+        pop @cells
+          while @cells
+          and (not defined $cells[-1]
+            or $cells[-1] eq q[]
+            or $cells[-1] =~ m/\A\s*\z/ );
 
-        my @fields = @{$row};
-        for my $this_col ( 0 .. $#fields ) {
-            my $thislength = $text_columns_cr->( $fields[$this_col] ) // 0;
-            if ( not $length_of_col[$this_col] ) {
-                $length_of_col[$this_col] = $thislength;
-            }
-            else {
-                $length_of_col[$this_col]
-                  = max( $length_of_col[$this_col], $thislength );
+        return @cells;
+    };
+
+    my $tabulate_cr = sub {
+        my ( $class, $orig ) = &$invocant_cr;
+        my $self = $class->define($orig);
+
+        my $separator = shift // q[ ];
+        my @length_of_col;
+        my $maxwidths = 0;
+
+        foreach my $row ( @{$self} ) {
+            my @cells = @{$row};
+            for my $this_col ( 0 .. $#cells ) {
+                my $thislength = $text_columns_cr->( $cells[$this_col] );
+
+                $maxwidths = max( $maxwidths, $thislength ) if $equal_width;
+                $length_of_col[$this_col] = $thislength
+                  if ( not $length_of_col[$this_col]
+                    or $length_of_col[$this_col] < $thislength );
             }
         }
+
+        my @lines;
+
+        foreach my $record_r ( @{$self} ) {
+            my @cells = $prune_space_list_cr->( @{$record_r} );
+
+            # prune trailing cells
+
+            next unless @cells;    # skip blank rows
+
+            for my $this_col ( reverse( 0 .. ( $#cells - 1 ) ) ) {
+                if ( 0 == $length_of_col[$this_col] ) {
+                    splice @cells, $this_col, 1;
+                    next;
+                }
+                # delete blank columns so it doesn't add the separator
+
+                my $width
+                  = $equal_width ? $maxwidths : $length_of_col[$this_col];
+
+                $cells[$this_col]
+                  = sprintf( '%-*s', $width, $cells[$this_col] );
+
+            }
+            push @lines, join( $separator, @cells );
+
+        } ## tidy end: foreach my $record_r ( @{$self...})
+
+        return \@lines;
+
+    };
+
+    sub tabulate {
+        $equal_width = 0;
+        goto $tabulate_cr;
     }
 
-    my @lines;
-
-    foreach my $record_r ( @{$self} ) {
-        my @fields = @{$record_r};
-
-        for my $this_col ( 0 .. $#fields - 1 ) {
-            $fields[$this_col] = sprintf( '%-*s',
-                $length_of_col[$this_col],
-                ( $fields[$this_col] // q[] ) );
-        }
-        push @lines, join( $separator, @fields );
-
+    sub tabulate_equal_width {
+        $equal_width = 1;
+        goto $tabulate_cr;
     }
 
-    return \@lines;
-
-} ## tidy end: sub tabulate
+}
 
 =item B<tabulated(I<separator>)>
 
@@ -2182,40 +2229,6 @@ sub tabulated {
     my $lines_r = $class->tabulate( $self, @_ );
     return join( "\n", @$lines_r ) . "\n";
 }
-
-=item B<tabulate_equal_width(I<separator>)>
-
-Like C<tabulate()>, but instead of each column having its own width,
-all columns have the same width.
-
-=cut
-
-sub tabulate_equal_width {
-    my ( $class, $orig ) = &$invocant_cr;
-    my $self = $class->define($orig);
-    # makes a copy
-    my $separator = shift // q[ ];
-
-    my %width_of;
-    $width_of{$_} = $text_columns_cr->($_) foreach $class->flattened($self);
-
-    my $colwidth = max( values %width_of );
-
-    my @lines;
-
-    foreach my $fields ( @{$self} ) {
-
-        for my $j ( 0 .. $#{$fields} - 1 ) {
-            $fields->[$j]
-              .= q[ ] x ( $colwidth - $width_of{ $fields->[$j] } );
-        }
-        push @lines, join( $separator, @$fields );
-
-    }
-
-    return \@lines;
-
-} ## tidy end: sub tabulate_equal_width
 
 =back
 
@@ -2482,7 +2495,6 @@ sub xlsx {
 __END__
 
 =back
-
 
 =head1 DIAGNOSTICS
 
