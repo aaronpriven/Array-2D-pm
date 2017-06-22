@@ -793,6 +793,8 @@ Otherwise, Array::2D will use Perl's `length` function.
         #             ];
         
 
+    Completely empty columns and rows will be removed.
+
 - **tabulate\_equal\_width(_separator_)**
 
     Like `tabulate()`, but instead of each column having its own width,

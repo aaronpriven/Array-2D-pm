@@ -2141,20 +2141,20 @@ all columns have the same width.
 
 =cut
 
+my $prune_space_list_cr = sub {
+    my @cells = @_;
+
+    pop @cells
+      while @cells
+      and (not defined $cells[-1]
+        or $cells[-1] eq q[]
+        or $cells[-1] =~ m/\A\s*\z/ );
+
+    return @cells;
+};
+
 {
     my $equal_width;
-
-    my $prune_space_list_cr = sub {
-        my @cells = @_;
-
-        pop @cells
-          while @cells
-          and (not defined $cells[-1]
-            or $cells[-1] eq q[]
-            or $cells[-1] =~ m/\A\s*\z/ );
-
-        return @cells;
-    };
 
     my $tabulate_cr = sub {
         my ( $class, $orig ) = &$invocant_cr;
