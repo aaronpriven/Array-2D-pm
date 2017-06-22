@@ -14,7 +14,6 @@ use Array::2D;
 
 # Add Unicode tests here
 
-my $skip;
 if ( eval { require Unicode::GCString; 1 } ) {
     run_tabulation_tests();
 }
