@@ -5,6 +5,11 @@ use lib './lib';
 use Array::2D;
 use Scalar::Util(qw/blessed refaddr/);
 
+my $builder = Test::More->builder;
+binmode $builder->output,         ":encoding(utf8)";
+binmode $builder->failure_output, ":encoding(utf8)";
+binmode $builder->todo_output,    ":encoding(utf8)";
+
 our $sample_test = [
     [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
