@@ -2132,6 +2132,8 @@ So, for example,
  #               'dddd e   f'
  #             ];
  
+Completely empty columns and rows will be removed.
+
 =item B<tabulate_equal_width(I<separator>)>
 
 Like C<tabulate()>, but instead of each column having its own width,
@@ -2301,6 +2303,8 @@ sub tsv_lines {
             }
         }
 
+        @cells = $prune_space_list_cr->(@cells);
+
         my $line = join( "\t", @cells );
         push @lines, $line;
     }
@@ -2314,9 +2318,8 @@ sub tsv {
     # tab-separated-values,
     # suitable for something like File::Slurper::write_text
 
-    # converts line feeds, tabs, and carriage returns to the Unicode
-    # visible symbols for these characters. Which is probably wrong, but
-    # why would you feed those in then...
+    # converts line feeds, tabs, and carriage returns to the Replacement
+    # Character.
 
     my ( $class, $self ) = &$invocant_cr;
 
@@ -2324,14 +2327,13 @@ sub tsv {
 
     my $carped;
     foreach my $line (@$lines_r) {
-        my $substitutions = s/\n/\x{FFFD}/g;
+        my $substitutions = $line =~ s/\n/\x{FFFD}/g;
         if ( $substitutions and not $carped ) {
             carp 'Line feed character found assembling tab-separated values. '
               . 'Replaced with REPLACEMENT CHARACTER';
             $carped = 1;
         }
     }
-
     return join( "\n", @$lines_r ) . "\n";
 
 } ## tidy end: sub tsv
