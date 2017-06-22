@@ -301,6 +301,12 @@ my @term_width_tests = (
 
 sub run_tabulation_tests {
     
+    if ($_[0] and $_[0] =~ /skip/i) {
+        plan skip_all => 'No Unicode::GCString';
+        done_testing;
+        return;
+    }
+    
     # So the idea is that when this module is loaded, it will set the
     # %tests and @term_width_tests variables. The loading module
     # can then add whatever tests it feels are appropriate.

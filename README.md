@@ -791,16 +791,17 @@ Otherwise, Array::2D will use Perl's `length` function.
         # $arrayref = [ 'a    bbb cc' ,
         #               'dddd e   f'
         #             ];
-
-- **tabulated(_separator_)**
-
-    Like `tabulate()`, but returns the data as a single string, using
-    line feeds as separators of rows, suitable for sending to a terminal.
+        
 
 - **tabulate\_equal\_width(_separator_)**
 
     Like `tabulate()`, but instead of each column having its own width,
     all columns have the same width.
+
+- **tabulated(_separator_)**
+
+    Like `tabulate()`, but returns the data as a single string, using
+    line feeds as separators of rows, suitable for sending to a terminal.
 
 ## SERIALIZING AND OUTPUT TO FILES
 

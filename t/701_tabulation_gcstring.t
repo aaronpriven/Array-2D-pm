@@ -8,12 +8,16 @@ BEGIN {
       // die "Can't load tabulation.pl";
 }
 
-BEGIN { 
-  $Array::2D::NO_GCSTRING = 1;
-}
+note('Use Unicode::GCString for determining column widths');
 
 use Array::2D;
 
-note("Use perl's length function for determining text column widths");
+# Add Unicode tests here
 
-run_tabulation_tests(); 
+my $skip;
+if ( eval { require Unicode::GCString; 1 } ) {
+    run_tabulation_tests();
+}
+else {
+    run_tabulation_tests('skip');
+}
