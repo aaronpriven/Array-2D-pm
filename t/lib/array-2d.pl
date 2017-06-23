@@ -10,6 +10,15 @@ binmode $builder->output,         ":encoding(utf8)";
 binmode $builder->failure_output, ":encoding(utf8)";
 binmode $builder->todo_output,    ":encoding(utf8)";
 
+#<<< no perltidy
+BEGIN {
+    do './t/lib/is_blessed.pl' // # first used when actually testing
+      do './lib/is_blessed.pl' // # latter two used  for syntax checking
+      do './is_blessed.pl' //     # within Eclipse
+      die "Can't load is_blessed.pl";
+}
+#>>>
+
 our $sample_test = [
     [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
     [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
@@ -142,29 +151,7 @@ sub test_exception (&;@) {
 
 }
 
-sub is_blessed {
-    my $obj         = shift;
-    my $description = shift;
-    if ( defined $description ) {
-        $description = "blessed correctly: $description";
-    }
-    else {
-        $description = '... and result is blessed correctly';
-    }
-    is( blessed($obj), 'Array::2D', $description );
-}
 
-sub isnt_blessed {
-    my $obj         = shift;
-    my $description = shift;
-    if ( defined $description ) {
-        $description = "not blessed: $description";
-    }
-    else {
-        $description = '... and result is not blessed';
-    }
-    is( blessed($obj), undef, $description );
-}
 
 sub a2dcan {
     my @methods = @_;

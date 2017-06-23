@@ -19,8 +19,8 @@ our %tests;
 push @{ $tests{tabulate} },
   ( {   description => 'an array with Unicode decomposed characters',
         test_array  => [
-            [ '_11_chars__', 'q' ],
-            [qw/solo alone/],
+            [ '_11_chars__',      'q' ],
+            [ 'solo',             'alone' ],
             [ "so\x{301}lo",      'only' ],
             [ "dieciseis",        'sixteen' ],
             [ "diecise\x{301}is", 'sixteen' ],
