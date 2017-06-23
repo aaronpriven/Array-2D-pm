@@ -139,28 +139,6 @@ our $one_col_test = [
     'Syntax', 'Johnston',  'Univers', 'Frutiger',
 ];
 
-sub test_exception (&;@) {
-    my $code        = shift;
-    my $description = shift;
-    my $regex       = shift;
-
-    my $exception_obj = &exception($code);
-    # bypass prototype
-    isnt( $exception_obj, undef, $description );
-    like( $exception_obj, $regex, "... and it's the expected exception" );
-
-}
 
 
-
-sub a2dcan {
-    my @methods = @_;
-    
-    if (@_ == 1) {
-        note "Testing $_[0]()";
-    } else {
-        note "Testing methods: @_";
-    }
-    
-    can_ok( 'Array::2D', @_ );
-}
+1;
