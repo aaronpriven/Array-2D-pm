@@ -1,10 +1,17 @@
 use strict;
-use utf8;
 use warnings;
-use Test::More;
+use utf8;
+use Test::More 0.98;
 use Test::Warn;
 
-binmode STDOUT, ":utf8";
+#<<< no perltidy
+BEGIN {
+    do './t/lib/testutil.pl' // # first used when actually testing
+      do './lib/testutil.pl' // # latter two used  for syntax checking
+      do './testutil.pl' //     # within Eclipse
+      die "Can't load testutil.pl";
+}
+#>>>
 
 my $tab_test = [
     [qw/one two three four/],     [qw/five six seven eight/],
@@ -57,15 +64,6 @@ sub test_tabulation {
     }
     is_deeply( $ref_returned, $expected,
         "$method: $description: ref: correct" );
-
-    if ( $method eq 'tabulate'
-        and ( $description =~ /Unicode/ or $description =~ /double/ ) )
-    {
-        CORE::say '# : You got:';
-        CORE::say '# : ', join( "\n# : ", @{$ref_returned} );
-        CORE::say "# : You expected:";
-        CORE::say '# : ', join( "\n# : ", @{$expected} );
-    }
 
     return;
 } ## tidy end: sub test_tabulation
@@ -587,3 +585,4 @@ sub run_tabulation_tests {
 
 } ## tidy end: sub run_tabulation_tests
 
+1;

@@ -3,8 +3,6 @@ use warnings;
 use Test::More 0.98;
 
 BEGIN {
-    do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
-      // die "Can't load array-2d.pl";
     do './t/lib/dimensions.pl' // do './lib/dimensions.pl'
       // die "Can't load dimensions.pl";
 }
@@ -17,5 +15,6 @@ if ( eval { require Ref::Util; 1 } ) {
     test_dimensions();
 }
 else {
-    test_dimensions('skip');
+    plan skip_all => 'Ref::Util not available';
+    done_testing;
 }

@@ -1,7 +1,5 @@
 use strict;
 use warnings;
-use Test::More 0.98;
-use Array::2D;
 
 # This is used to hold common routines run by by 010_construction_ref.t and
 #  011_constructon_refutil.t

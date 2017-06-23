@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use Test::More 0.98;
 
 BEGIN {
     $Array::2D::NO_REF_UTIL = 1;

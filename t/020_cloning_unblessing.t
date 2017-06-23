@@ -4,10 +4,25 @@ use warnings;
 use Scalar::Util(qw/refaddr/);
 
 BEGIN {
-    do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
-      // die "Can't load array-2d.pl";
+    do './t/lib/samples.pl' // do './lib/samples.pl'
+      // die "Can't load samples.pl";
 }
-our ( $sample_ref, $sample_test, $sample_obj );
+our ( $sample_ref, $sample_obj );
+
+my $sample_test = [
+    [ 'Joshua',      29, 'San Mateo',     undef,             'Hannah' ],
+    [ 'Christopher', 59, 'New York City', undef,             'Alexis' ],
+    [ 'Emily',       25, 'Dallas',        'Aix-en-Provence', 'Michael' ],
+    [ 'Nicholas',    -14, ],
+    [ 'Madison', 8, 'Vallejo' ],
+    [ 'Andrew',  -15, ],
+    [ 'Hannah', 38, 'Romita',     undef, 'Joshua', ],
+    [ 'Ashley', 57, 'Ray' ],
+    [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
+    [ 'Joseph', 0,  'San Francisco' ],
+];
+
+# $sample_test is the reference to which things are compared
 
 plan( tests => 25 );
 

@@ -2,6 +2,11 @@ use strict;
 use warnings;
 use Test::More 0.98;
 
+BEGIN {
+    do './t/lib/samples.pl' // do './lib/samples.pl' // do './samples.pl'
+      // die "Can't load samples.pl";
+}
+
 our ( $sample_obj, $sample_ref );
 our ( $one_row_obj, $one_row_ref, $one_col_obj, $one_col_ref );
 
@@ -20,12 +25,6 @@ my @subjects = (
 );
 
 sub test_dimensions {
-
-    if ( $_[0] and $_[0] =~ /skip/i ) {
-        plan skip_all => 'Ref::Util not available';
-        done_testing;
-        return;
-    }
 
     plan tests => ( @methods + 1 ) * ( @subjects * 2 + 1 );
     # add one method (is_empty) and one subject (a2dcan)
@@ -67,3 +66,5 @@ sub test_dimensions {
     done_testing;
 
 } ## tidy end: sub test_dimensions
+
+1;

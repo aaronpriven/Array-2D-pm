@@ -2,8 +2,8 @@ use strict;
 use warnings;
 
 BEGIN {
-    do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
-      // die "Can't load array-2d.pl";
+    do './t/lib/testutil.pl' // do './lib/testutil.pl'
+      // die "Can't load testutil.pl";
 }
 
 my $ins_ref = [ [ 'a', 1, 'x' ], [ 'b', 2, 'y' ], [ 'c', 3, 'z' ], ];

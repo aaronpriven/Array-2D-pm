@@ -2,134 +2,191 @@ use strict;
 use warnings;
 
 BEGIN {
-    do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
-      // die "Can't load array-2d.pl";
+    do './t/lib/samples.pl' // do './lib/samples.pl'
+      // die "Can't load samples.pl";
 }
 
 our $sample_ref;
 our ( $one_row_ref, $one_row_test );
 our ( $one_col_ref, $one_col_test );
 
-my @element_tests = (
-    [ 0,  0,  'Fetched top left element',                'Joshua' ],
-    [ 9,  2,  'Fetched element from last row',           'San Francisco' ],
-    [ 2,  4,  'Fetched element from last column',        'Michael' ],
-    [ 2,  2,  'Fetched an element from middle',          'Dallas' ],
-    [ -1, 0,  'Fetched an element with negative row',    'Joseph' ],
-    [ 2,  -2, 'Fetched an element with negative column', 'Aix-en-Provence' ],
-    [ 1,  3,  'Fetched an element set to undef' ],
-    [ 3,  4,  'Fetched an empty element' ],
-    [ 12, 2,  'Fetched element from nonexistent row' ],
-    [ 2,  6,  'Fetched element from nonexistent column' ],
-    [ -20, 0,  'Fetched element from nonexistent negative row' ],
-    [ 0,   -9, 'Fetched element from nonexistent negative column' ],
-    [ 0,   0,  'Fetched element from one-element array', 'x', [ ['x'] ], ],
-    [ 0,   1,  'Fetched element from one-row array', 'x', [ [ 1, 'x' ] ], ],
-    [ 1,   0,  'Fetched element from one-column array', 'x', [ [1], ['x'] ], ],
-    [ 1, 1, 'Fetched nonexistent element from empty object', undef, [], ],
+my %defaults = (
+    element => {
+        test_array => $sample_ref,
+        expected   => undef,
+    },
+    row => {
+        test_array     => $sample_ref,
+        expected       => undef,
+        returns_a_list => 1,
+    },
+    col => {
+        test_array     => $sample_ref,
+        expected       => undef,
+        returns_a_list => 1,
+    },
 );
 
-my @row_tests = (
-    [   0,
-        [ 'Joshua', 29, 'San Mateo', undef, 'Hannah' ],
-        'full row from beginning',
+my @tests = (
+    element => [
+        {   arguments   => [ 0, 0, ],
+            description => 'Fetched top left element',
+            expected    => 'Joshua'
+        },
+        {   arguments   => [ 9, 2, ],
+            description => 'Fetched element from last row',
+            expected    => 'San Francisco'
+        },
+        {   arguments   => [ 2, 4, ],
+            description => 'Fetched element from last column',
+            expected    => 'Michael'
+        },
+        {   arguments   => [ 2, 2, ],
+            description => 'Fetched an element from middle',
+            expected    => 'Dallas'
+        },
+        {   arguments   => [ -1, 0, ],
+            description => 'Fetched an element with negative row',
+            expected    => 'Joseph'
+        },
+        {   arguments   => [ 2, -2, ],
+            description => 'Fetched an element with negative column',
+            expected    => 'Aix-en-Provence'
+        },
+        {   arguments   => [ 1, 3, ],
+            description => 'Fetched an element set to undef'
+        },
+        { arguments => [ 3, 4, ], description => 'Fetched an empty element' },
+        {   arguments   => [ 12, 2, ],
+            description => 'Fetched element from nonexistent row'
+        },
+        {   arguments   => [ 2, 6, ],
+            description => 'Fetched element from nonexistent column'
+        },
+        {   arguments   => [ -20, 0, ],
+            description => 'Fetched element from nonexistent negative row',
+        },
+        {   arguments => [ 0, -9, ],
+            description => 'Fetched element from nonexistent negative column',
+        },
+        {   arguments   => [ 0, 0, ],
+            description => 'Fetched element from one-element array',
+            expected    => 'x',
+            test_array => [ ['x'] ],
+        },
+        {   arguments   => [ 0, 1, ],
+            description => 'Fetched element from one-row array',
+            expected    => 'x',
+            test_array => [ [ 1, 'x' ] ],
+        },
+        {   arguments   => [ 1, 0, ],
+            description => 'Fetched element from one-column array',
+            expected    => 'x',
+            test_array => [ [1], ['x'] ],
+        },
+        {   arguments   => [ 1, 1, ],
+            description => 'Fetched nonexistent element from empty object',
+            expected    => undef,
+            test_array  => [],
+        },
     ],
-    [   2,
-        [ 'Emily', 25, 'Dallas', 'Aix-en-Provence', 'Michael' ],
-        'full row from middle',
+    row => [
+        {   arguments   => 0,
+            expected    => [ 'Joshua', 29, 'San Mateo', undef, 'Hannah' ],
+            description => 'Fetched full row from beginning',
+        },
+        {   arguments => 2,
+            expected => [ 'Emily', 25, 'Dallas', 'Aix-en-Provence', 'Michael' ],
+            description => 'Fetched full row from middle',
+        },
+        {   arguments   => 7,
+            expected    => [ 'Ashley', 57, 'Ray' ],
+            description => 'Fetched partial row from middle'
+        },
+        {   arguments   => 9,
+            expected    => [ 'Joseph', 0, 'San Francisco' ],
+            description => 'Fetched partial row from end'
+        },
+        {   arguments   => -2,
+            expected    => [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
+            description => 'Fetched row with negative index'
+        },
+        { arguments => 10, expected => [], description => 'nonexistent row' },
+        {   arguments   => -20,
+            expected    => [],
+            description => 'Fetched nonexistent negative row'
+        },
+        {   arguments   => 0,
+            expected    => [],
+            description => 'Fetched row from empty array',
+            test_array  => [],
+        },
+        {   arguments   => 0,
+            expected    => $one_row_test,
+            description => 'Fetched row from one-row array',
+            test_array  => $one_row_ref,
+        },
+        {   arguments   => 1,
+            expected    => ['Helvetica'],
+            description => 'Fetched row from one-column array',
+            test_array  => $one_col_ref,
+        },
     ],
-    [ 7, [ 'Ashley', 57, 'Ray' ],           'partial row from middle' ],
-    [ 9, [ 'Joseph', 0,  'San Francisco' ], 'partial row from end' ],
-    [   -2,
-        [ 'Alexis', 50, 'San Carlos', undef, 'Christopher' ],
-        'row with negative index'
+    col => [
+        {   arguments => 0,
+            expected  => [
+                'Joshua',  'Christopher', 'Emily',  'Nicholas',
+                'Madison', 'Andrew',      'Hannah', 'Ashley',
+                'Alexis',  'Joseph',
+            ],
+            description => 'full column from beginning',
+        },
+        {   arguments   => 1,
+            expected    => [ 29, 59, 25, -14, 8, -15, 38, 57, 50, 0, ],
+            description => 'full column from middle',
+        },
+        {   arguments   => 3,
+            expected    => [ undef, undef, 'Aix-en-Provence' ],
+            description => 'partial column from middle',
+        },
+        {   arguments => 4,
+            expected  => [
+                'Hannah', 'Alexis', 'Michael', undef,
+                undef,    undef,    'Joshua',  undef,
+                'Christopher'
+            ],
+            description => 'partial column from end',
+        },
+        {   arguments => -3,
+            expected  => [
+                'San Mateo',  'New York City', 'Dallas', undef,
+                'Vallejo',    undef,           'Romita', 'Ray',
+                'San Carlos', 'San Francisco',
+            ],
+            description => 'column with negative index',
+        },
+        { arguments => 6, expected => [], description => 'nonexistent column' },
+        {   arguments   => -9,
+            expected    => [],
+            description => 'nonexistent negative column'
+        },
+        {   arguments   => 0,
+            expected    => [],
+            description => 'column from empty array',
+            test_array  => [],
+        },
+        {   arguments   => 0,
+            expected    => $one_col_test,
+            description => 'column from one-column array',
+            test_array  => $one_col_ref,
+        },
+        {   arguments   => 2,
+            expected    => ['Union City'],
+            description => 'column from one-row array',
+            test_array  => $one_row_ref,
+        },
     ],
-    [ 10,  [], 'nonexistent row' ],
-    [ -20, [], 'nonexistent negative row' ],
-    [ 0,   [], 'row from empty array', [] ],
-    [ 0, $one_row_test, 'row from one-row array', $one_row_ref ],
-    [ 1, ['Helvetica'], 'row from one-column array', $one_col_ref ],
 );
 
-my @col_tests = (
-    [   0,
-        [   'Joshua',  'Christopher', 'Emily',  'Nicholas',
-            'Madison', 'Andrew',      'Hannah', 'Ashley',
-            'Alexis',  'Joseph',
-        ],
-        'full column from beginning',
-    ],
-    [   1,
-        [ 29, 59, 25, -14, 8, -15, 38, 57, 50, 0, ],
-        'full column from middle',
-    ],
-    [ 3, [ undef, undef, 'Aix-en-Provence' ], 'partial column from middle', ],
-    [   4,
-        [   'Hannah', 'Alexis', 'Michael', undef,
-            undef,    undef,    'Joshua',  undef,
-            'Christopher'
-        ],
-        'partial column from end',
-    ],
-    [   -3,
-        [   'San Mateo',  'New York City', 'Dallas', undef,
-            'Vallejo',    undef,           'Romita', 'Ray',
-            'San Carlos', 'San Francisco',
-        ],
-        'column with negative index',
-    ],
-    [ 6,  [], 'nonexistent column' ],
-    [ -9, [], 'nonexistent negative column' ],
-    [ 0,  [], 'column from empty array', [] ],
-    [ 0, $one_col_test, 'column from one-column array', $one_col_ref ],
-    [ 2, ['Union City'], 'column from one-row array', $one_row_ref ],
-);
+plan_and_run_generic_tests( \@tests, \%defaults );
 
-plan( tests => ( 4 * ( @row_tests + @col_tests + @element_tests ) + 3 ) );
-# 4 tests per entry, plus 3, one for each method
-
-sub test_reader {
-    my ( $method, $description, $indices, $expected_results, $test_array ) = @_;
-    $test_array ||= $sample_ref;
-
-    my $ref_to_test = Array::2D->clone_unblessed($test_array);
-    my $obj_to_test = Array::2D->clone($test_array);
-
-    is_deeply( [ $obj_to_test->$method(@$indices) ],
-        $expected_results, "$description: object" );
-    is_deeply( $obj_to_test, $test_array,
-        '... and it did not alter the object' );
-    is_deeply( [ Array::2D->$method( $ref_to_test, @$indices ) ],
-        $expected_results, "$description: reference" );
-    is_deeply( $ref_to_test, $test_array,
-        '... and it did not alter the reference' );
-}
-
-a2dcan('element');
-
-for my $test_r (@element_tests) {
-    my ( $row, $col, $description, $expected_results, $test_array ) = @$test_r;
-    my $indices = [ $row, $col ];
-    test_reader( 'element', $description, $indices, [$expected_results],
-        $test_array );
-}
-
-a2dcan('row');
-
-for my $test_r (@row_tests) {
-    my ( $row, $expected_results, $description, $test_array ) = @$test_r;
-    my $indices = [$row];
-    test_reader( 'row', "Fetched $description",
-        $indices, $expected_results, $test_array );
-}
-
-a2dcan('col');
-
-for my $test_r (@col_tests) {
-    my ( $col, $expected_results, $description, $test_array ) = @$test_r;
-    my $indices = [$col];
-    test_reader( 'col', "Fetched $description",
-        $indices, $expected_results, $test_array );
-}
-
-done_testing;
