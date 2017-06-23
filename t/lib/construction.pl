@@ -22,7 +22,7 @@ BEGIN {
 }
 #>>>
 
-sub test_simple_construction {
+sub test_construction {
 
     plan( tests => 34 );
     # yes, I have a plan(), but do I have an environmental_impact_report() and
@@ -105,7 +105,7 @@ sub test_simple_construction {
 
     return;
 
-} ## tidy end: sub test_simple_construction
+} ## tidy end: sub test_construction
 
 sub test_new_or_bless {
     my $method = shift;
@@ -147,7 +147,7 @@ sub test_new_or_bless {
     my @broken = ( [qw/a b/], 'not_a_ref', [qw/c d/] );
 
   SKIP: {
-        skip ('Test::Fatal not available', 2) unless $has_test_fatal;
+        skip( 'Test::Fatal not available', 2 ) unless $has_test_fatal;
 
         my $exception = exception( sub { Array::2D->$method(@broken); } );
         isnt( $exception, undef,
