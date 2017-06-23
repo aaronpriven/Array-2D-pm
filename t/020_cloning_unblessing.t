@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+use Scalar::Util(qw/refaddr/);
+
 BEGIN {
     do './t/lib/array-2d.pl' // do './lib/array-2d.pl'
       // die "Can't load array-2d.pl";

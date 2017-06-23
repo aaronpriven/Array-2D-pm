@@ -2,23 +2,16 @@ use strict;
 use warnings;
 use Test::More 0.98;
 use Array::2D;
-use Scalar::Util(qw/blessed refaddr/);
-
-my $has_test_fatal;
-if ( eval { require Test::Fatal; 1 } ) {
-    $has_test_fatal = 1;
-    Test::Fatal->import();
-}
 
 # This is used to hold common routines run by by 010_construction_ref.t and
 #  011_constructon_refutil.t
 
 #<<< no perltidy
 BEGIN {
-    do './t/lib/is_blessed.pl' // # first used when actually testing
-      do './lib/is_blessed.pl' // # latter two used  for syntax checking
-      do './is_blessed.pl' //     # within Eclipse
-      die "Can't load is_blessed.pl";
+    do './t/lib/testutil.pl' // # first used when actually testing
+      do './lib/testutil.pl' // # latter two used  for syntax checking
+      do './testutil.pl' //     # within Eclipse
+      die "Can't load testutil.pl";
 }
 #>>>
 
@@ -31,9 +24,7 @@ sub test_construction {
 ############
     # ->empty
 
-    note 'Testing ->empty()';
-
-    can_ok( 'Array::2D', 'empty' );
+    a2dcan('empty');
 
     my $empty_obj_from_empty = Array::2D->empty();
     is_deeply( $empty_obj_from_empty, [], "empty(): New empty object created" );
@@ -80,9 +71,7 @@ sub test_construction {
       = [ [ 'a', '1', 'X', -1 ], [ 'b', '2', 'Y', -2 ], [ 'c', '3', 'Z', -3 ],
       ];
 
-    note 'Testing new_across()';
-
-    can_ok( 'Array::2D', 'new_across' );
+    a2dcan('new_across');
 
     my @across_flat
       = ( 'a', '1', 'X', -1, 'b', '2', 'Y', -2, 'c', '3', 'Z', -3 );
@@ -95,7 +84,7 @@ sub test_construction {
 ###############
     # ->new_down()
 
-    can_ok( 'Array::2D', 'new_down' );
+    a2dcan('new_down');
 
     my @down_flat = ( 'a', 'b', 'c', '1', '2', '3', 'X', 'Y', 'Z', -1, -2, -3 );
     my $down_2d = Array::2D->new_down( 3, @down_flat );
@@ -112,9 +101,7 @@ sub test_new_or_bless {
 
     # things common to both new() and bless()
 
-    note "Testing ->$method()";
-
-    can_ok( 'Array::2D', $method );
+    a2dcan($method);
 
     # EMPTY
 
@@ -146,19 +133,10 @@ sub test_new_or_bless {
 
     my @broken = ( [qw/a b/], 'not_a_ref', [qw/c d/] );
 
-  SKIP: {
-        skip( 'Test::Fatal not available', 2 ) unless $has_test_fatal;
-
-        my $exception = exception( sub { Array::2D->$method(@broken); } );
-        isnt( $exception, undef,
-            "$method() throws exception with a row that's a non-reference" );
-        like(
-            $exception,
-            qr/must be unblessed arrayrefs/i,
-            "$method() dies with correct message with non-reference row"
-        );
-
-    }
+    test_exception { Array::2D->$method(@broken); }
+    "$method() throws exception with a row that's a non-reference",
+      qr/must be unblessed arrayrefs/i
+      ;
 
     # FROM A SINGLE REF (a row)
 

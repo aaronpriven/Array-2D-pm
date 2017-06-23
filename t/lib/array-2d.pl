@@ -1,21 +1,16 @@
 use strict;
+use warnings;
+
 use Test::More 0.98;
-use Test::Fatal;
 use lib './lib';
 use Array::2D;
-use Scalar::Util(qw/blessed refaddr/);
-
-my $builder = Test::More->builder;
-binmode $builder->output,         ":encoding(utf8)";
-binmode $builder->failure_output, ":encoding(utf8)";
-binmode $builder->todo_output,    ":encoding(utf8)";
 
 #<<< no perltidy
 BEGIN {
-    do './t/lib/is_blessed.pl' // # first used when actually testing
-      do './lib/is_blessed.pl' // # latter two used  for syntax checking
-      do './is_blessed.pl' //     # within Eclipse
-      die "Can't load is_blessed.pl";
+    do './t/lib/testutil.pl' // # first used when actually testing
+      do './lib/testutil.pl' // # latter two used  for syntax checking
+      do './testutil.pl' //     # within Eclipse
+      die "Can't load testutil.pl";
 }
 #>>>
 
