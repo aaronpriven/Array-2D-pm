@@ -160,8 +160,11 @@ $text_columns_cr = sub {
 
     if ( !$impl && eval { require Unicode::GCString; 1 } ) {
         $text_columns_cr = sub {
+
             return 0 unless defined $_[0];
-            return Unicode::GCString->new("$_[0]")->columns;
+            my $cols = Unicode::GCString->new("$_[0]")->columns;
+            return $cols;
+
             # explicit stringification is necessary
             # since Unicode::GCString doesn't automatically
             # stringify numbers
@@ -2195,9 +2198,11 @@ my $prune_space_list_cr = sub {
                 my $width
                   = $equal_width ? $maxwidths : $length_of_col[$this_col];
 
-                $cells[$this_col]
-                  = sprintf( '%-*s', $width, $cells[$this_col] );
-
+                #$cells[$this_col]
+                #  = sprintf( '%-*s', $width, $cells[$this_col] );
+                
+                my $spaces = $width - $text_columns_cr->( $cells[$this_col]);
+                $cells[$this_col] .= ( ' ' x $spaces) if $spaces > 0; 
             }
             push @lines, join( $separator, @cells );
 

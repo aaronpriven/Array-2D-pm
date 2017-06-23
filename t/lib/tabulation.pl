@@ -4,6 +4,8 @@ use warnings;
 use Test::More;
 use Test::Warn;
 
+binmode STDOUT, ":utf8";
+
 my $tab_test = [
     [qw/one two three four/],     [qw/five six seven eight/],
     [qw/nine ten eleven twelve/], [qw/thirteen 14 fifteen/],
@@ -56,10 +58,19 @@ sub test_tabulation {
     is_deeply( $ref_returned, $expected,
         "$method: $description: ref: correct" );
 
+    if ( $method eq 'tabulate'
+        and ( $description =~ /Unicode/ or $description =~ /double/ ) )
+    {
+        CORE::say '# : You got:';
+        CORE::say '# : ', join( "\n# : ", @{$ref_returned} );
+        CORE::say "# : You expected:";
+        CORE::say '# : ', join( "\n# : ", @{$expected} );
+    }
+
     return;
 } ## tidy end: sub test_tabulation
 
-my %tests = (
+our %tests = (
     tabulate => [
         {   description => 'an array',
             expected    => [
