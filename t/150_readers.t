@@ -91,8 +91,9 @@ my @tests = (
         },
     ],
     row => [
-        {   arguments   => 0,
-            expected    => [ 'Joshua', 29, 'San Mateo', undef, 'Hannah' ],
+        {   arguments => 0,
+            expected  => [ 'Joshua', 29, 'San Mateo', undef, 'Hannah' ]
+            ,
             description => 'Fetched full row from beginning',
         },
         {   arguments => 2,

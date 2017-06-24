@@ -8,7 +8,7 @@ binmode $builder->output,         ":encoding(utf8)";
 binmode $builder->failure_output, ":encoding(utf8)";
 binmode $builder->todo_output,    ":encoding(utf8)";
 
-use Scalar::Util(qw/blessed/);
+use Scalar::Util(qw/blessed reftype/);
 
 sub is_blessed {
     my $obj         = shift;
@@ -73,14 +73,18 @@ sub test_exception (&;@) {
 
     }
 
-} ## tidy end: sub SUB0
+} ## tidy end: sub test_exception (&;@)
+
+# @all_tests is a list rather than a hash (even though it consists of pairs)
+# because I want to test the methods in order
 
 sub plan_and_run_generic_tests {
-
     my @all_tests  = @{ +shift };
     my $defaults_r = shift;
 
     my $test_count = generic_test_count( \@all_tests, $defaults_r );
+
+    note "result of generic test count: $test_count";
 
     plan( tests => $test_count );
 
@@ -113,7 +117,7 @@ sub generic_test_count {
     my @all_tests  = @{ +shift };
     my $defaults_r = shift;
 
-    my $test_count;
+    my $test_count = 0;
 
     while (@all_tests) {
         my $method = shift @all_tests;
@@ -121,22 +125,41 @@ sub generic_test_count {
         $test_count += 1;
         # one test per method (a2dcan)
 
-        $test_count += ( 2 * scalar @tests );
         # two tests (obj and ref) per test in %tests
-
-        $test_count += ( 2 * scalar @tests )
-          if $defaults_r->{$method}{check_blessing};
-        # two tests (obj and ref) if blessing is checked
-
-        $test_count += ( 2 * scalar @tests )
-          if $defaults_r->{$method}{check_alteration};
-        # two tests (obj and ref) if alteration is checked
+        # That's why each of the below adds two per test and not just one
 
         foreach my $test_r (@tests) {
-            $test_count += 2 if exists $test_r->{warning};
-        }
-        # two more tests (for the warning texti for each of obj and ref)
-        # per test with a warning
+            if ( exists $test_r->{exception} ) {
+                $test_count += 4;
+                next;
+            }
+            # if there's an exception, add two, and skip the rest because
+            # they're not used if there's an exception test.
+
+            if (   exists $test_r->{expected}
+                or exists $defaults_r->{$method}{expected} )
+            {
+                $test_count += 2;
+            }
+
+            if (   exists $test_r->{warning}
+                or exists $defaults_r->{$method}{warning} )
+            {
+                $test_count += 2;
+            }
+            if ( exists $defaults_r->{$method}{check_blessing} ) {
+                $test_count += 2;
+            }
+            if (   exists $test_r->{altered}
+                or exists( $defaults_r->{$method}{altered} ) )
+            {
+                $test_count += 2;
+            }
+
+            # two more tests (for the warning or exception text)
+            # for each of obj and ref) per test with a warning
+
+        } ## tidy end: foreach my $test_r (@tests)
 
     } ## tidy end: while (@all_tests)
 
@@ -149,109 +172,184 @@ my $has_test_warn;
 sub generic_test {
 
     my $method = shift;
+    my %t = _get_test_factors( $method, @_ );
+    
+    
+    # o) test results, ensure array doesn't change
+    # o) test results, also test array change
+    # o) test array change, ignore results
+    # o) in non-void context, array doesn't change, test results.
+    #    in void context, array changes to what results would have been
+    #       in non-void context.
+    
+    my $has_expected = exists $t{expected};
+    my $description  = $t{description};       # easier to interpolate
 
-    my $test_r           = shift;
-    my $defaults_r       = shift // {};
-    my $returns_a_list   = $defaults_r->{$method}{returns_a_list};
-    my $check_blessing   = $defaults_r->{$method}{check_blessing};
-    my $check_alteration = $defaults_r->{$method}{check_alteration};
+    my @arguments = _get_arguments( \%t );
 
-    my $expected = $test_r->{expected} // $defaults_r->{$method}{expected};
-    my $description = $test_r->{description}
-      // $defaults_r->{$method}{description};
-    my $test_array = $test_r->{test_array}
-      // $defaults_r->{$method}{test_array};
-    my $warning     = $test_r->{warning}   // $defaults_r->{$method}{warning};
-    my $arguments_r = $test_r->{arguments} // $defaults_r->{$method}{arguments};
-    my @arguments;
+    my %to_test = (
+        object => Array::2D->clone( $t{test_array} ),
+        ref    => Array::2D->clone_unblessed( $t{test_array} )
+    );
 
-    if ( defined $arguments_r ) {
-        if ( ref $arguments_r eq 'ARRAY' ) {
-            @arguments = @$arguments_r;
+    my %process = (
+        object => sub { $to_test{object}->$method(@arguments) },
+        ref    => sub { Array::2D->$method( $to_test{ref}, @arguments ) }
+    );
+
+    if ( $t{exception} ) {
+        test_exception { $process{object}->() } $t{description}, $t{exception};
+        test_exception { $process{ref}->() } $t{description},    $t{exception};
+        return;
+    }
+
+    foreach my $type (qw/object ref/) {
+
+        my $returned;
+
+        if ( $t{warning} ) {
+            _check_for_test_warn() unless defined $has_test_warn;
+
+          SKIP: {
+                skip( 'Test::Warn not available', 1 ) unless $has_test_warn;
+                warning_like {
+                    $returned
+                      = $t{returns_a_list}
+                      ? [ $process{$type}->() ]
+                      : $process{$type}->();
+                }
+                { carped => $t{warning} },
+                  "$method: $description: object: gave correct warning";
+            }
         }
         else {
-            @arguments = ($arguments_r);
+            $returned
+              = $t{returns_a_list}
+              ? [ $process{$type}->() ]
+              : $process{$type}->();
         }
-    }
 
-    my $obj_to_test = Array::2D->clone($test_array);
-    my $ref_to_test = Array::2D->clone_unblessed($test_array);
+        is_deeply( $returned, $t{expected},
+            "$method: $description: $type: correct result" )
+          if $has_expected;
 
-    my ( $obj_returned, $ref_returned );
-
-    if ($warning) {
-        if ( not defined $has_test_warn ) {
-            if ( eval { require Test::Warn; 1 } ) {
-                $has_test_warn = 1;
+        if ( $t{check_blessing} ) {
+            if ( $t{check_blessing} eq 'always'
+                or
+                ( $t{check_blessing} eq 'as_oriignal' and $type eq 'object' ) )
+            {
+                is_blessed($returned);
+            }
+            elsif ( $t{check_blessing} eq 'as_original' ) {
+                isnt_blessed($returned);
             }
             else {
-                $has_test_warn = 0;
+
+                fail 'Unknown blessing check type: ' . $t{check_blessing};
+            }
+        }
+        if ( exists $t{altered} ) {
+            if ( reftype $t{altered} eq 'ARRAY' ) {
+                is_deeply( $to_test{$type}, $t{altered},
+                    "$method: $description: $type: altered $type correctly" );
+            }
+            elsif ( $t{altered} == 0 ) {
+                is_deeply( $to_test{$type}, $t{test_array},
+                    "... and it did not alter the $type" );
+            }
+            else {
+                fail 'Unknown alteration: ' . explain $t{altered};
             }
         }
 
-      SKIP: {
-            skip( 'Test::Warn not available', 1 ) unless $has_test_warn;
-            warning_like {
-                $obj_returned
-                  = $returns_a_list
-                  ? [ $obj_to_test->$method(@arguments) ]
-                  : $obj_to_test->$method(@arguments);
-            }
-            { carped => $warning },
-              "$method: $description: object: gave warning";
+    } ## tidy end: foreach my $type (qw/object ref/)
+
+    if ( exists $t{in_place} ) {
+
+        my %to_test_ip = (
+            object => Array::2D->clone( $t{test_array} ),
+            ref    => Array::2D->clone_unblessed( $t{test_array} )
+        );
+
+        my %process_ip = (
+            object => sub { $to_test_ip{object}->$method(@arguments) },
+            ref    => sub { Array::2D->$method( $to_test_ip{ref}, @arguments ) }
+        );
+
+        foreach my $type (qw/object ref/) {
+
+            $process_ip{$type}->();
+            is_deeply(
+                $to_test{$type}, $t{expected},
+                "$method in place: $description: $type: altered correctly"
+            );
 
         }
-    } ## tidy end: if ($warning)
-    else {
-        $obj_returned
-          = $returns_a_list
-          ? [ $obj_to_test->$method(@arguments) ]
-          : $obj_to_test->$method(@arguments);
-    }
 
-    is_deeply( $obj_returned, $expected,
-        "$method: $description: object: correct" );
-    is_blessed($obj_returned) if ($check_blessing);
-
-    is_deeply( $obj_to_test, $test_array,
-        '... and it did not alter the object' )
-      if $check_alteration;
-
-    if ($warning) {
-      SKIP: {
-            skip( 'Test::Warn not available', 1 ) unless $has_test_warn;
-            warning_like {
-                $ref_returned
-                  = $returns_a_list
-                  ? [ Array::2D->$method( $ref_to_test, @arguments ) ]
-                  : Array::2D->$method( $ref_to_test, @arguments );
-            }
-            { carped => $warning }, "$method: $description: ref: gave warning";
-        }
-    }
-    else {
-        $ref_returned
-          = $returns_a_list
-          ? [ Array::2D->$method( $ref_to_test, @arguments ) ]
-          : Array::2D->$method( $ref_to_test, @arguments );
-    }
-    # there's an arrayref constructor around each of the
-    # $ref_returned assignments
-
-    is_deeply( $ref_returned, $expected,
-        "$method: $description: ref: correct" );
-
-    is_deeply( $ref_to_test, $test_array,
-        '... and it did not alter the reference' )
-      if $check_alteration;
-
-    if ($check_blessing) {
-        is_blessed($obj_returned)   if ( $check_blessing eq 'always' );
-        isnt_blessed($obj_returned) if ( $check_blessing eq 'as_original' );
-    }
+    } ## tidy end: if ( exists $t{in_place...})
 
     return;
 
 } ## tidy end: sub generic_test
+
+sub _get_test_factors {
+
+    my $method = shift;
+    my %t;
+    my $test_r = shift;
+    my $defaults_r = shift // {};
+
+    foreach my $test_factor (
+        qw[
+        altered
+        arguments
+        check_blessing
+        description
+        exception
+        expected
+        in_place
+        returns_a_list
+        test_array
+        warning
+        ]
+      )
+    {
+
+        if ( exists $test_r->{$test_factor} ) {
+            $t{$test_factor} = $test_r->{$test_factor};
+        }
+        elsif ( exists $defaults_r->{$method}{$test_factor} ) {
+            $t{$test_factor} = $test_r->{$test_factor};
+        }
+    } ## tidy end: foreach my $test_factor ( qw[...])
+
+    return %t;
+
+} ## tidy end: sub _get_test_factors
+
+sub _get_arguments {
+    my $t_r = shift;
+
+    my @arguments;
+
+    if ( defined $t_r->{arguments} ) {
+        if ( ref $t_r->{arguments} eq 'ARRAY' ) {
+            @arguments = @{ $t_r->{arguments} };
+        }
+        else {
+            @arguments = $t_r->{arguments};
+        }
+    }
+
+}
+
+sub _check_for_test_warn {
+    if ( eval { require Test::Warn; 1 } ) {
+        $has_test_warn = 1;
+    }
+    else {
+        $has_test_warn = 0;
+    }
+}
 
 1;

@@ -375,27 +375,27 @@ my @generic_tests = (
 
 my %generic_defaults = (
     rows => {
-        test_array       => $sample_ref,
-        check_blessing   => 'always',
-        check_alteration => 1,
+        test_array     => $sample_ref,
+        check_blessing => 'always',
+        altered        => 0,
     },
     cols => {
-        test_array       => $sample_transposed_ref,
-        check_blessing   => 'always',
-        check_alteration => 1,
+        test_array     => $sample_transposed_ref,
+        check_blessing => 'always',
+        altered        => 0,
     },
     slice_cols => {
-        test_array       => $sample_ref,
-        check_blessing   => 'always',
-        check_alteration => 1,
+        test_array     => $sample_ref,
+        check_blessing => 'always',
+        altered        => 0,
     },
     slice => {
-        test_array       => $sample_ref,
-        check_blessing   => 'always',
-        check_alteration => 1,
+        test_array     => $sample_ref,
+        check_blessing => 'always',
+        altered        => 0,
+        in_place       => 1,
     },
 );
-
 my $generic_test_count
   = generic_test_count( \@generic_tests, \%generic_defaults );
 
