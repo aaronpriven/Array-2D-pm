@@ -66,7 +66,7 @@ my @tests = (
 );
 
 my %defaults = (
-    transpose => { test_procedure => 'contextual' },
+    transpose => { test_procedure => 'contextual' , check_blessing => 'always'},
     flattened => { test_procedure => 'results', returns_a_list => 1 }
 );
 
