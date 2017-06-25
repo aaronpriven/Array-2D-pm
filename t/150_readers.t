@@ -12,15 +12,18 @@ our ( $one_col_ref, $one_col_test );
 
 my %defaults = (
     element => {
+        test_procedure => 'results',
         test_array => $sample_ref,
         expected   => undef,
     },
     row => {
+        test_procedure => 'results',
         test_array     => $sample_ref,
         expected       => undef,
         returns_a_list => 1,
     },
     col => {
+        test_procedure => 'results',
         test_array     => $sample_ref,
         expected       => undef,
         returns_a_list => 1,

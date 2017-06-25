@@ -375,53 +375,26 @@ my @generic_tests = (
 
 my %generic_defaults = (
     rows => {
+        test_procedure => 'results',
         test_array     => $sample_ref,
         check_blessing => 'always',
-        altered        => 0,
     },
     cols => {
+        test_procedure => 'results',
         test_array     => $sample_transposed_ref,
         check_blessing => 'always',
-        altered        => 0,
     },
     slice_cols => {
+        test_procedure => 'results',
         test_array     => $sample_ref,
         check_blessing => 'always',
-        altered        => 0,
     },
     slice => {
+        test_procedure => 'contextual',
         test_array     => $sample_ref,
         check_blessing => 'always',
-        altered        => 0,
-        in_place       => 1,
     },
 );
-my $generic_test_count
-  = generic_test_count( \@generic_tests, \%generic_defaults );
 
-plan( tests => ( $generic_test_count + ( @slice_tests * 4 ) ) );
-
-run_generic_tests( \@generic_tests, \%generic_defaults );
-
-# slice tests
-
-for my $test_r (@slice_tests) {
-    my $arguments        = $test_r->{arguments};
-    my $expected_results = $test_r->{expected};
-    my $description      = $test_r->{description};
-
-    my $obj_to_test = Array::2D->clone($sample_ref);
-    $obj_to_test->slice(@$arguments);
-    is_deeply( $obj_to_test,
-        $expected_results, "Sliced in place: $description: object" );
-    is_blessed($obj_to_test);
-
-    my $ref_to_test = Array::2D->clone_unblessed($sample_ref);
-    Array::2D->slice( $ref_to_test, @$arguments );
-    is_deeply( $ref_to_test,
-        $expected_results, "Sliced in place: $description: reference" );
-    isnt_blessed($ref_to_test);
-}
-
-done_testing;
+plan_and_run_generic_tests (\@generic_tests, \%generic_defaults );
 

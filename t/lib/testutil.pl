@@ -9,6 +9,7 @@ binmode $builder->failure_output, ":encoding(utf8)";
 binmode $builder->todo_output,    ":encoding(utf8)";
 
 use Scalar::Util(qw/blessed reftype/);
+use List::Util ('uniq');
 
 sub is_blessed {
     my $obj         = shift;
@@ -113,6 +114,8 @@ sub run_generic_tests {
 
 }
 
+my %proper_blessing = ( object => 'Array::2D', ref => undef );
+
 sub generic_test_count {
     my @all_tests  = @{ +shift };
     my $defaults_r = shift;
@@ -129,35 +132,54 @@ sub generic_test_count {
         # That's why each of the below adds two per test and not just one
 
         foreach my $test_r (@tests) {
-            if ( exists $test_r->{exception} ) {
+
+            my %t = _get_test_factors( $method, $test_r, $defaults_r );
+
+            if ( exists $t{exception} ) {
                 $test_count += 4;
                 next;
             }
             # if there's an exception, add two, and skip the rest because
             # they're not used if there's an exception test.
 
-            if (   exists $test_r->{expected}
-                or exists $defaults_r->{$method}{expected} )
-            {
-                $test_count += 2;
+            # all other counts are just placeholders for now
+            for ( $t{test_procedure} ) {
+                if ( $_ eq 'results' ) {
+                    $test_count += 3*2;
+                    # result is right, 
+                    # array hasn't changed, 
+                    # blessing of array hasn't changed
+                }
+                elsif ( $_ eq 'altered' ) {
+                    $test_count += 2*2;
+                    # array has changed correctly, 
+                    # blessing of array hasn't changed
+                }
+                elsif ( $_ eq 'both' ) {
+                    $test_count += 3*2;
+                    # result is right, 
+                    # array has changed correctly, 
+                    # blessing of array hasn't changed
+                }
+                else {    # ($_ eq 'contextual')
+                    $test_count += 5*2;
+                    # result is right, 
+                    # array hasn't changed,
+                    # blessing of array hasn't changed
+                    # in-place result is right,
+                    # blessing of array after in-place hasn't changed
+                }
             }
 
             if (   exists $test_r->{warning}
                 or exists $defaults_r->{$method}{warning} )
             {
                 $test_count += 2;
+                $test_count += 2 if $t{test_procedure} eq 'contextual';
             }
-            if ( exists $defaults_r->{$method}{check_blessing} ) {
+            if ( $t{check_blessing} and $t{test_procedure} ne 'altered') {
                 $test_count += 2;
             }
-            if (   exists $test_r->{altered}
-                or exists( $defaults_r->{$method}{altered} ) )
-            {
-                $test_count += 2;
-            }
-
-            # two more tests (for the warning or exception text)
-            # for each of obj and ref) per test with a warning
 
         } ## tidy end: foreach my $test_r (@tests)
 
@@ -167,26 +189,61 @@ sub generic_test_count {
 
 } ## tidy end: sub generic_test_count
 
-my $has_test_warn;
+my $has_test_warnings;
+
+sub _run_code_and_warn_maybe (&@) {
+    my ( $code, $regex, $description ) = @_;
+    
+    if ( not defined $regex ) {
+        $code->();
+        return;
+    }
+
+    if ( not defined $has_test_warnings ) {
+        if ( eval { require Test::Warnings; 1 } ) {
+            $has_test_warnings = 1;
+        }
+        else {
+            $has_test_warnings = 0;
+        }
+    }
+
+    if ($has_test_warnings) {
+        my $warning = Test::Warnings::warning { $code->() };
+        like( $warning, $regex, "$description: correct warning" )
+          or diag "$description: got unexpected warning(s): ",
+          explain($warning);
+    }
+    else {
+        $code->();
+      SKIP: {
+            skip( "$description: skipped: Test::Warnings not available", 1 );
+        }
+
+    }
+    return;
+} ## tidy end: sub _run_code_and_warn_maybe (&@)
 
 sub generic_test {
 
     my $method = shift;
     my %t = _get_test_factors( $method, @_ );
     
-    
-    # o) test results, ensure array doesn't change
-    # o) test results, also test array change
-    # o) test array change, ignore results
-    # o) in non-void context, array doesn't change, test results.
-    #    in void context, array changes to what results would have been
-    #       in non-void context.
-    
-    my $has_expected = exists $t{expected};
-    my $description  = $t{description};       # easier to interpolate
+    # test => results - test results, ensure array doesn't change.
+    # test => altered - test array change, ignore results
+    # test => both - test results, also test array change
+    # test => contextual -- in non-void context, just like 'results' --
+    #    array doesn't change, test results.
+    #    in void context, array changes to what results
+    #    would have been in non-void context.
+
+    # in all cases, array should stay blessed as before.
+    # results should be blessed if $t{check_blessing} is true
+
+    my $description = $t{description};    # easier to interpolate
 
     my @arguments = _get_arguments( \%t );
-
+    
     my %to_test = (
         object => Array::2D->clone( $t{test_array} ),
         ref    => Array::2D->clone_unblessed( $t{test_array} )
@@ -203,94 +260,118 @@ sub generic_test {
         return;
     }
 
-    foreach my $type (qw/object ref/) {
-
+    foreach my $array_type (qw/object ref/) {
         my $returned;
-
-        if ( $t{warning} ) {
-            _check_for_test_warn() unless defined $has_test_warn;
-
-          SKIP: {
-                skip( 'Test::Warn not available', 1 ) unless $has_test_warn;
-                warning_like {
-                    $returned
-                      = $t{returns_a_list}
-                      ? [ $process{$type}->() ]
-                      : $process{$type}->();
-                }
-                { carped => $t{warning} },
-                  "$method: $description: object: gave correct warning";
-            }
-        }
-        else {
+        _run_code_and_warn_maybe (sub {
             $returned
               = $t{returns_a_list}
-              ? [ $process{$type}->() ]
-              : $process{$type}->();
+              ? [ &{ $process{$array_type} } ]
+              : &{ $process{$array_type} }
+        },
+        $t{warning}, $description);
+        
+        if ( $t{test_procedure} ne 'altered' ) {
+            is_deeply( $returned, $t{expected},
+                "$method: $description: $array_type: correct result" );
+
+            if ( $t{check_blessing} ) {
+                if ($t{check_blessing} eq 'always'
+                    or (    $t{check_blessing} eq 'as_orignal'
+                        and $array_type eq 'object' )
+                  )
+                {
+                    is_blessed($returned);
+                }
+                elsif ( $t{check_blessing} eq 'as_original' ) {
+                    isnt_blessed($returned);
+                }
+                else {
+                    BAIL_OUT 'Unknown blessing check type: '
+                      . $t{check_blessing};
+                }
+            }
+
+        } ## tidy end: if ( $t{test_procedure...})
+
+        if ( $t{test_procedure} eq 'altered' or $t{test_procedure} eq 'both' ) {
+            BAIL_OUT 'Bad "altered" test factor'
+              unless reftype( $t{altered} ) eq 'ARRAY';
+            is_deeply( $to_test{$array_type}, $t{altered},
+                "$method: $description: altered $array_type correctly" );
+        }
+        else {
+            is_deeply( $to_test{$array_type}, $t{test_array},
+                "... and it did not alter the $array_type" );
         }
 
-        is_deeply( $returned, $t{expected},
-            "$method: $description: $type: correct result" )
-          if $has_expected;
+        is( blessed( $to_test{$array_type} ),
+            $proper_blessing{$array_type},
+            "... and blessing of $array_type did not change"
+        );
 
-        if ( $t{check_blessing} ) {
-            if ( $t{check_blessing} eq 'always'
-                or
-                ( $t{check_blessing} eq 'as_oriignal' and $type eq 'object' ) )
-            {
-                is_blessed($returned);
-            }
-            elsif ( $t{check_blessing} eq 'as_original' ) {
-                isnt_blessed($returned);
-            }
-            else {
+    } ## tidy end: foreach my $array_type (qw/object ref/)
 
-                fail 'Unknown blessing check type: ' . $t{check_blessing};
-            }
-        }
-        if ( exists $t{altered} ) {
-            if ( reftype $t{altered} eq 'ARRAY' ) {
-                is_deeply( $to_test{$type}, $t{altered},
-                    "$method: $description: $type: altered $type correctly" );
-            }
-            elsif ( $t{altered} == 0 ) {
-                is_deeply( $to_test{$type}, $t{test_array},
-                    "... and it did not alter the $type" );
-            }
-            else {
-                fail 'Unknown alteration: ' . explain $t{altered};
-            }
-        }
+    if ( $t{test_procedure} eq 'contextual' ) {
 
-    } ## tidy end: foreach my $type (qw/object ref/)
-
-    if ( exists $t{in_place} ) {
-
-        my %to_test_ip = (
+        %to_test = (
             object => Array::2D->clone( $t{test_array} ),
             ref    => Array::2D->clone_unblessed( $t{test_array} )
         );
 
-        my %process_ip = (
-            object => sub { $to_test_ip{object}->$method(@arguments) },
-            ref    => sub { Array::2D->$method( $to_test_ip{ref}, @arguments ) }
+        %process = (
+            object => sub { $to_test{object}->$method(@arguments) },
+            ref    => sub { Array::2D->$method( $to_test{ref}, @arguments ) }
         );
 
-        foreach my $type (qw/object ref/) {
-
-            $process_ip{$type}->();
-            is_deeply(
-                $to_test{$type}, $t{expected},
-                "$method in place: $description: $type: altered correctly"
+        foreach my $array_type (qw/object ref/) {
+            _run_code_and_warn_maybe { $process{$array_type}->() }
+            $t{warning}, $description;
+            is_deeply( $to_test{$array_type}, $t{expected},
+                "$method in place: $description: $array_type: altered correctly"
             );
 
+            is( blessed( $to_test{$array_type} ),
+                $proper_blessing{$array_type},
+                "... and blessing of $array_type did not change"
+            );
         }
 
-    } ## tidy end: if ( exists $t{in_place...})
+    } ## tidy end: if ( $t{test_procedure...})
 
     return;
 
 } ## tidy end: sub generic_test
+
+my %is_valid_test_factor = map { $_ => 1 } qw[
+  altered  arguments      check_blessing description exception
+  expected returns_a_list test_procedure test_array  warning
+];
+
+# altered - expected value of new altered array
+# arguments - arguments to be passed to method
+# check_blessing - check to see if results are blessed
+# description - text to be displayed in output
+# exception - if present, overrides 'test'.  Method should generate exception.
+#    Value is a regex to be tested against that exception to make sure it's
+#    the right one.
+# expected - expected value of results
+# returns_a_list - whether results is a list (as row(), col() ) and needs to
+# have an arrayref thrown around it before comparing it.
+# test - test procedure, below
+# test_array - array values to be tested against. This will be cloned into
+#   new object and new reference
+# warning - Method should generate warning. Value is a regex to be tested
+#   against that warning to make sure it's the right one.
+#
+
+my %is_valid_test_procedure
+  = map { $_ => 1 } qw/results altered both contextual/;
+# test => results - test results, ensure array doesn't change
+# test => altered - test array change, ignore results
+# test => both - test results, also test array change
+# test => contextual -- in non-void context, array doesn't change,
+#    test results. in void context, array changes to what results
+#       would have been in non-void context.
 
 sub _get_test_factors {
 
@@ -299,32 +380,28 @@ sub _get_test_factors {
     my $test_r = shift;
     my $defaults_r = shift // {};
 
-    foreach my $test_factor (
-        qw[
-        altered
-        arguments
-        check_blessing
-        description
-        exception
-        expected
-        in_place
-        returns_a_list
-        test_array
-        warning
-        ]
-      )
-    {
+    my @keys = uniq sort ( keys %$test_r, keys %{$defaults_r->{$method}} );
+    
+    foreach my $test_factor (@keys) {
+
+        BAIL_OUT("Unknown test factor $test_factor")
+          if not $is_valid_test_factor{$test_factor};
 
         if ( exists $test_r->{$test_factor} ) {
             $t{$test_factor} = $test_r->{$test_factor};
         }
         elsif ( exists $defaults_r->{$method}{$test_factor} ) {
-            $t{$test_factor} = $test_r->{$test_factor};
+            $t{$test_factor} = $defaults_r->{$method}{$test_factor};
         }
-    } ## tidy end: foreach my $test_factor ( qw[...])
+    }
 
+    $t{test_procedure} //= 'results';
+
+    BAIL_OUT 'Unknown test procedure ' . $t{test_procedure}
+      unless $is_valid_test_procedure{ $t{test_procedure} };
+      
     return %t;
-
+    
 } ## tidy end: sub _get_test_factors
 
 sub _get_arguments {
@@ -341,15 +418,6 @@ sub _get_arguments {
         }
     }
 
-}
-
-sub _check_for_test_warn {
-    if ( eval { require Test::Warn; 1 } ) {
-        $has_test_warn = 1;
-    }
-    else {
-        $has_test_warn = 0;
-    }
 }
 
 1;
