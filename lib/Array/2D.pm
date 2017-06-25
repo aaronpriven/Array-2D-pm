@@ -763,6 +763,8 @@ in rows are now in columns, and vice versa.
 In void context, alters the original. Otherwise, creates a new
 Array::2D object and returns that.
 
+The result of transpose() is pruned.
+
 =cut
 
 sub transpose {
@@ -778,6 +780,8 @@ sub transpose {
     foreach my $col ( 0 .. $class->last_col($self) ) {
         push @{$new}, [ map { $_->[$col] } @{$self} ];
     }
+
+    $class->prune($new);
 
     # non-void context: return new object
     if ( defined wantarray ) {
