@@ -56,17 +56,20 @@ contains other arrays:
    [ 4, 5, 6 ] ,
  ]
 
-Most of the time, it's good practice to avoid having programs that use
-a module know about the internal construction of an object. However,
-this module is not like that. It exists purely to give methods to a
-standard construction in Perl, and will never change the data structure
-to include anything else. Therefore, it is perfectly reasonable to use
-the normal reference syntax to access items inside the array. A
-construction like C<< $array2d->[0][1] >>  for accessing a single
-element, or C<< @{$array2d} >> to get the list of rows, is perfectly
-acceptable. This module exists because the reference-based 
-implementation of multidimensional arrays in Perl makes it difficult to
-access, for example, a single column, or a two-dimensional slice,
+This module provides methods for using that standard construction.
+
+Most of the time, it's good practice to avoid having programs that
+use a module know about the internal construction of an object.
+However, this module is not like that.  It assumes that the data
+structure I<is> accessible outside the module's code, and may be
+altered by other code.  The module will never change the data
+structure to include anything else. Therefore, it is perfectly
+reasonable to use the normal reference syntax to access items inside
+the array. A construction like C<< $array2d->[0][1] >>  for accessing
+a single element, or C<< @{$array2d} >> to get the list of rows,
+is perfectly appropriate. This module exists because the reference-based
+implementation of multidimensional arrays in Perl makes it difficult
+to access, for example, a single column, or a two-dimensional slice,
 without writing lots of extra code.
 
 Array::2D uses "row" for the first dimension, and "column" or
@@ -269,7 +272,7 @@ the rows inside the object, use C<clone()>.
 If you think it's possible that the detect-an-AoA-structure could
 give a false positive (you want a new object that might have only one row,
 where each entry in that row is an reference to an unblessed array),
-use C<< Array::2D->bless ( [ @your_rows ] )>>.
+use C<< Array::2D->bless ( [ @your_rows ] ) >>.
 
 =cut
 
@@ -2143,7 +2146,7 @@ So, for example,
  # $arrayref = [ 'a    bbb cc' ,
  #               'dddd e   f'
  #             ];
- 
+
 Completely empty columns and rows will be removed.
 
 =item B<tabulate_equal_width(I<separator>)>

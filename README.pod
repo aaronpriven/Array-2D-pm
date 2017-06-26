@@ -8,7 +8,7 @@ Array::2D - Methods for simple array-of-arrays data structures
 
 This documentation refers to version 0.001_001
 
-=head2 NOTICE
+=head1 NOTICE
 
 This is alpha software.  Method names and behaviors are subject to change.
 The test suite has significant omissions.
@@ -43,8 +43,13 @@ contains other arrays:
    [ 1, 2, 3 ] , 
    [ 4, 5, 6 ] ,
  ]
- 
+
 This module provides methods for using that standard construction.
+
+=head1 DOCUMENTATION
+
+Full documentation is located in "plain old documentation" within
+the 2D.pm module.
 
 =head1 AUTHOR
 
