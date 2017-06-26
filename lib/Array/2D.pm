@@ -269,7 +269,7 @@ the rows inside the object, use C<clone()>.
 If you think it's possible that the detect-an-AoA-structure could
 give a false positive (you want a new object that might have only one row,
 where each entry in that row is an reference to an unblessed array),
-use C<Array::2D->bless ( [ @your_rows ] )>.
+use C<< Array::2D->bless ( [ @your_rows ] )>>.
 
 =cut
 
@@ -428,7 +428,7 @@ sub new_down {
 
 =item B<new_to_term_width (...)>
 
-A combination of I<new_down> and I<tabulate_equal_width>.  Takes three named
+A combination of C<new_down()> and C<tabulate_equal_width()>.  Takes three named
 arguments:
 
 =over
@@ -1062,7 +1062,7 @@ sub slice_cols {
     return $return;
 } ## tidy end: sub slice_cols
 
-=item B<slice(I<row_idx_from, col_idx_to, col_idx_from, col_idx_to>)>
+=item B<slice(I<row_index_from, row_index_to, col_index_from, col_index_to>)>
 
 Takes a two-dimensional slice of the array; like cutting a rectangle
 out of the array.
@@ -2117,7 +2117,7 @@ sub hash_of_row_elements {
 
 =head2 TABULATING INTO COLUMNAR OUTPUT
 
-If the C<Unicode::GCString|Unicode::GCString> module can be loaded,
+If the L<Unicode::GCString|Unicode::GCString> module can be loaded,
 its C<columns> method will be used to determine the width of each
 character. This will treat composed accented characters and
 double-width Asian characters correctly.
@@ -2352,7 +2352,7 @@ sub tsv {
 
 } ## tidy end: sub tsv
 
-=item B<<file(...) >>
+=item B<< file(...) >>
 
 Accepts a file specification and creates a new file at that  location
 containing the data in the 2D array.

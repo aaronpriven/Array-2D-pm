@@ -164,7 +164,7 @@ with undefined values.
     If you think it's possible that the detect-an-AoA-structure could
     give a false positive (you want a new object that might have only one row,
     where each entry in that row is an reference to an unblessed array),
-    use `Array::2D-`bless ( \[ @your\_rows \] )>.
+    use `Array::2D->bless ( [ @your_rows ] )>>.`
 
 - **bless(_row\_ref, row\_ref..._)**
 - **bless(_aoa\_ref_)**
@@ -214,7 +214,7 @@ with undefined values.
 
 - **new\_to\_term\_width (...)**
 
-    A combination of _new\_down_ and _tabulate\_equal\_width_.  Takes three named
+    A combination of `new_down()` and `tabulate_equal_width()`.  Takes three named
     arguments:
 
     - array => _arrayref_
@@ -442,7 +442,7 @@ with undefined values.
     Note that duplicates are not de-duplicated, so the result of
     $obj->slice\_cols(1,1,1) will retrieve three copies of the same column.
 
-- **slice(_row\_idx\_from, col\_idx\_to, col\_idx\_from, col\_idx\_to_)**
+- **slice(_row\_index\_from, row\_index\_to, col\_index\_from, col\_index\_to_)**
 
     Takes a two-dimensional slice of the array; like cutting a rectangle
     out of the array.
@@ -774,7 +774,7 @@ the object.
 
 ## TABULATING INTO COLUMNAR OUTPUT
 
-If the `Unicode::GCString|Unicode::GCString` module can be loaded,
+If the [Unicode::GCString](https://metacpan.org/pod/Unicode::GCString) module can be loaded,
 its `columns` method will be used to determine the width of each
 character. This will treat composed accented characters and
 double-width Asian characters correctly.
@@ -845,7 +845,7 @@ Otherwise, Array::2D will use Perl's `length` function.
     If tabs or line feeds are present in any element,
     they will be replaced by the Unicode Replacement Character, U+FFFD.
 
-- **&lt;file(...) **>
+- **file(...)**
 
     Accepts a file specification and creates a new file at that  location
     containing the data in the 2D array.
@@ -987,3 +987,11 @@ later version, or
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+# POD ERRORS
+
+Hey! **The above document had some coding errors, which are explained below:**
+
+- Around line 269:
+
+    Unterminated C< ... > sequence
