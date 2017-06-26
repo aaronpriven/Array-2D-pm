@@ -74,7 +74,7 @@ sub test_exception (&;@) {
 
     }
 
-} ## tidy end: sub test_exception (&;@)
+} ## tidy end: sub SUB0
 
 # @all_tests is a list rather than a hash (even though it consists of pairs)
 # because I want to test the methods in order
@@ -145,31 +145,31 @@ sub generic_test_count {
             # all other counts are just placeholders for now
             for ( $t{test_procedure} ) {
                 if ( $_ eq 'results' ) {
-                    $test_count += 3*2;
-                    # result is right, 
-                    # array hasn't changed, 
+                    $test_count += 3 * 2;
+                    # result is right,
+                    # array hasn't changed,
                     # blessing of array hasn't changed
                 }
                 elsif ( $_ eq 'altered' ) {
-                    $test_count += 2*2;
-                    # array has changed correctly, 
+                    $test_count += 2 * 2;
+                    # array has changed correctly,
                     # blessing of array hasn't changed
                 }
                 elsif ( $_ eq 'both' ) {
-                    $test_count += 3*2;
-                    # result is right, 
-                    # array has changed correctly, 
+                    $test_count += 3 * 2;
+                    # result is right,
+                    # array has changed correctly,
                     # blessing of array hasn't changed
                 }
                 else {    # ($_ eq 'contextual')
-                    $test_count += 5*2;
-                    # result is right, 
+                    $test_count += 5 * 2;
+                    # result is right,
                     # array hasn't changed,
                     # blessing of array hasn't changed
                     # in-place result is right,
                     # blessing of array after in-place hasn't changed
                 }
-            }
+            } ## tidy end: for ( $t{test_procedure...})
 
             if (   exists $test_r->{warning}
                 or exists $defaults_r->{$method}{warning} )
@@ -177,7 +177,7 @@ sub generic_test_count {
                 $test_count += 2;
                 $test_count += 2 if $t{test_procedure} eq 'contextual';
             }
-            if ( $t{check_blessing} and $t{test_procedure} ne 'altered') {
+            if ( $t{check_blessing} and $t{test_procedure} ne 'altered' ) {
                 $test_count += 2;
             }
 
@@ -193,7 +193,7 @@ my $has_test_warnings;
 
 sub _run_code_and_warn_maybe (&@) {
     my ( $code, $regex, $description ) = @_;
-    
+
     if ( not defined $regex ) {
         $code->();
         return;
@@ -222,13 +222,13 @@ sub _run_code_and_warn_maybe (&@) {
 
     }
     return;
-} ## tidy end: sub _run_code_and_warn_maybe (&@)
+} ## tidy end: sub SUB1
 
 sub generic_test {
 
     my $method = shift;
     my %t = _get_test_factors( $method, @_ );
-    
+
     # test => results - test results, ensure array doesn't change.
     # test => altered - test array change, ignore results
     # test => both - test results, also test array change
@@ -243,7 +243,7 @@ sub generic_test {
     my $description = $t{description};    # easier to interpolate
 
     my @arguments = _get_arguments( \%t );
-    
+
     my %to_test = (
         object => Array::2D->clone( $t{test_array} ),
         ref    => Array::2D->clone_unblessed( $t{test_array} )
@@ -253,7 +253,7 @@ sub generic_test {
         object => sub { $to_test{object}->$method(@arguments) },
         ref    => sub { Array::2D->$method( $to_test{ref}, @arguments ) }
     );
-    
+
     if ( $t{exception} ) {
         test_exception { $process{object}->() } $t{description}, $t{exception};
         test_exception { $process{ref}->() } $t{description},    $t{exception};
@@ -262,19 +262,20 @@ sub generic_test {
 
     foreach my $array_type (qw/object ref/) {
         my $returned;
-        _run_code_and_warn_maybe (sub {
-            $returned
-              = $t{returns_a_list}
-              ? [  $process{$array_type}->()  ]
-              :  $process{$array_type}->() ;
-              note "still running";
-        },
-        $t{warning}, $description);
-        
+        _run_code_and_warn_maybe(
+            sub {
+                $returned = $t{returns_a_list}
+                  ? [ $process{$array_type}->() ]
+                  : $process{$array_type}->();
+            },
+            $t{warning},
+            $description
+        );
+
         if ( $t{test_procedure} ne 'altered' ) {
             is_deeply( $returned, $t{expected},
                 "$method: $description: $array_type: correct result" );
-                
+
             if ( $t{check_blessing} ) {
                 if ($t{check_blessing} eq 'always'
                     or (    $t{check_blessing} eq 'as_orignal'
@@ -381,8 +382,8 @@ sub _get_test_factors {
     my $test_r = shift;
     my $defaults_r = shift // {};
 
-    my @keys = uniq sort ( keys %$test_r, keys %{$defaults_r->{$method}} );
-    
+    my @keys = uniq sort ( keys %$test_r, keys %{ $defaults_r->{$method} } );
+
     foreach my $test_factor (@keys) {
 
         BAIL_OUT("Unknown test factor $test_factor")
@@ -400,9 +401,9 @@ sub _get_test_factors {
 
     BAIL_OUT 'Unknown test procedure ' . $t{test_procedure}
       unless $is_valid_test_procedure{ $t{test_procedure} };
-      
+
     return %t;
-    
+
 } ## tidy end: sub _get_test_factors
 
 sub _get_arguments {
@@ -418,7 +419,7 @@ sub _get_arguments {
             @arguments = $t_r->{arguments};
         }
     }
-    
+
     return @arguments;
 
 }
