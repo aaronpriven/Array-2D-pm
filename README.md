@@ -6,6 +6,11 @@ Array:2D - Methods for simple array-of-arrays data structures
 
 This documentation refers to version 0.001\_001
 
+## NOTICE
+
+This is alpha software.  Method names and behaviors are subject to change.
+The test suite has significant omissions.
+
 # SYNOPSIS
 
     use Array::2D;
@@ -340,6 +345,8 @@ with undefined values.
 
     In void context, alters the original. Otherwise, creates a new
     Array::2D object and returns that.
+
+    The result of transpose() is pruned.
 
 - **flattened()**
 

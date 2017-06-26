@@ -20,6 +20,11 @@ Array:2D - Methods for simple array-of-arrays data structures
 
 This documentation refers to version 0.001_001
 
+=head2 NOTICE
+
+This is alpha software.  Method names and behaviors are subject to change.
+The test suite has significant omissions.
+
 =head1 SYNOPSIS
 
  use Array::2D;
