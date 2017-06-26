@@ -406,6 +406,9 @@ my $term_width_ref = [
     [qw/citiesbyline  htmltables    newsignup     tabskeds/],
 ];
 
+our $separator_width_list
+  = [qw/a bbb ccc ddd eee fff ggg hhh iii jjj k lll mmm/];
+
 our @term_width_tests = (
     {   description        => 'made new',
         expected_tabulated => [
@@ -431,7 +434,7 @@ our @term_width_tests = (
             'citiesbyline  iphoto_stops  prepareflags  zipcodes',
             'compareskeds  linedescrip   slists2html   zipdecals'
         ],
-        expected_tabulated => [
+        expected_array => [
             [ 'addfields',     'comparestops', 'linesbycity',   'ss' ],
             [ 'avl2patdest',   'dbexport',     'makepoints',    'stops2kml' ],
             [ 'avl2points',    'decalcompare', 'matrix',        'stopsofline' ],
@@ -458,6 +461,44 @@ our @term_width_tests = (
         ]
     },
 
+    {   description    => 'with one-width separator',
+        list           => $separator_width_list,
+        width          => 19,
+        expected_array => [
+            [qw/a   ddd ggg jjj mmm/], [qw/bbb eee hhh k/],
+            [qw/ccc fff iii lll/],
+        ],
+        expected_tabulated =>
+          [ 'a   ddd ggg jjj mmm', 'bbb eee hhh k', 'ccc fff iii lll', ],
+
+    },
+    {   description    => 'with two-width separator',
+        list           => $separator_width_list,
+        separator      => '--',
+        width          => 19,
+        expected_array => [
+            [qw/a   eee iii mmm/], 
+            [qw/bbb fff jjj/],
+            [qw/ccc ggg k  /],       
+            [qw/ddd hhh lll/],
+        ],
+        expected_tabulated => [
+            'a  --eee--iii--mmm', 'bbb--fff--jjj',
+            'ccc--ggg--k', 'ddd--hhh--lll',
+        ],
+    },
+    {   description    => 'with zero-width separator',
+        separator      => '',
+        width          => 19,
+        list           => [qw/a bbb ccc ddd eee fff ggg hhh iii jjj k lll/],
+        expected_array => [
+            [qw/a   ccc eee ggg iii k/], 
+            [qw/bbb ddd fff hhh jjj lll/],
+        ],
+        expected_tabulated =>
+          [ 'a  ccceeegggiiik',
+            'bbbdddfffhhhjjjlll', ],
+    },
 );
 
 sub run_tabulation_tests {
@@ -483,7 +524,9 @@ sub run_tabulation_tests {
               = join( "\n", @{ $lf_test{expected} } ) . "\n";
             push @tests, \%lf_test;
         }
-        push @{ $tests{$lf_method} }, @tests;
+        push @tests, @{ $tests{$lf_method} }
+          if $tests{$lf_method};
+        $tests{$lf_method} = \@tests;
 
     }
 
@@ -500,7 +543,8 @@ sub run_tabulation_tests {
     # get test count and run generic tests
 
     my $test_count = generic_test_count( \@generic_tests, \%defaults );
-    $test_count .= 3 * scalar @term_width_tests + 1;
+
+    $test_count += ( 3 * scalar @term_width_tests ) + 1;
     # three tests for each new_to_term_width test
     # ( returned tabulation, returned array, array is blessed)
     # plus one for a2dcan('new_to_term_width');
@@ -528,67 +572,18 @@ sub run_tabulation_tests {
         my ( $array2d_result, $tabulated_result )
           = Array::2D->new_to_term_width(%params);
         is_deeply( $array2d_result, $expected_array,
-            "new from term width: $description: got object" );
+            "new from term width: $description: got correct object" );
+
+        #note explain $array2d_result;
         is_blessed($array2d_result);
         is_deeply( $tabulated_result, $expected_tabulated,
-            "new_from_term_width: $description: got tabulation" );
+            "new_from_term_width: $description: got correct tabulation" );
+        #note explain $tabulated_result;
 
     } ## tidy end: for my $test_r (@term_width_tests)
 
     done_testing;
 
 } ## tidy end: sub run_tabulation_tests
-
-__END__
-
-sub test_tabulation {
-
-    my $method = shift;
-    my $test_r = shift;
-
-    my $expected    = $test_r->{expected};
-    my $description = $test_r->{description};
-    my $test_array  = $test_r->{test_array} // $tab_test;
-    my $separator   = $test_r->{separator};
-    my $headers_r   = $test_r->{headers};
-    my $warning     = $test_r->{warning};
-    my @arguments;
-    if ( defined $separator ) {
-        @arguments = ($separator);
-    }
-    elsif ( defined $headers_r ) {
-        @arguments = @{$headers_r};
-    }
-
-    my $obj_to_test = Array::2D->clone($test_array);
-    my $ref_to_test = Array::2D->clone_unblessed($test_array);
-
-    my ( $obj_returned, $ref_returned );
-
-    if ($warning) {
-        warning_like { $obj_returned = $obj_to_test->$method(@arguments) }
-        { carped => $warning }, "$method: $description: object: gave warning";
-    }
-    else {
-        $obj_returned = $obj_to_test->$method(@arguments);
-    }
-
-    is_deeply( $obj_returned, $expected,
-        "$method: $description: object: correct" );
-
-    if ($warning) {
-        warning_like {
-            $ref_returned = Array::2D->$method( $ref_to_test, @arguments )
-        }
-        { carped => $warning }, "$method: $description: ref: gave warning";
-    }
-    else {
-        $ref_returned = Array::2D->$method( $ref_to_test, @arguments );
-    }
-    is_deeply( $ref_returned, $expected,
-        "$method: $description: ref: correct" );
-
-    return;
-} ## tidy end: sub test_tabulation
 
 1;

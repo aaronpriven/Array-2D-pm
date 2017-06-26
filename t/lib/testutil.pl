@@ -74,7 +74,7 @@ sub test_exception (&;@) {
 
     }
 
-} ## tidy end: sub SUB0
+} ## tidy end: sub test_exception (&;@)
 
 # @all_tests is a list rather than a hash (even though it consists of pairs)
 # because I want to test the methods in order
@@ -201,6 +201,7 @@ sub _run_code_and_warn_maybe (&@) {
 
     if ( not defined $has_test_warnings ) {
         if ( eval { require Test::Warnings; 1 } ) {
+            Test::Warnings->import(':no_end_test');
             $has_test_warnings = 1;
         }
         else {
@@ -209,7 +210,7 @@ sub _run_code_and_warn_maybe (&@) {
     }
 
     if ($has_test_warnings) {
-        my $warning = Test::Warnings::warning { $code->() };
+        my $warning = Test::Warnings::warning( $code );
         like( $warning, $regex, "$description: correct warning" )
           or diag "$description: got unexpected warning(s): ",
           explain($warning);
@@ -222,7 +223,7 @@ sub _run_code_and_warn_maybe (&@) {
 
     }
     return;
-} ## tidy end: sub SUB1
+} ## tidy end: sub _run_code_and_warn_maybe (&@)
 
 sub generic_test {
 
@@ -264,7 +265,8 @@ sub generic_test {
         my $returned;
         _run_code_and_warn_maybe(
             sub {
-                $returned = $t{returns_a_list}
+                $returned
+                  = $t{returns_a_list}
                   ? [ $process{$array_type}->() ]
                   : $process{$array_type}->();
             },
