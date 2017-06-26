@@ -14,7 +14,7 @@ $VERSION = eval $VERSION;   ## no critic (BuiltinFunctions::ProhibitStringyEval)
 
 =head1 NAME
 
-Array:2D - Methods for simple array-of-arrays data structures
+Array::2D - Methods for simple array-of-arrays data structures
 
 =head1 VERSION
 
