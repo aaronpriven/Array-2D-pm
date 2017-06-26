@@ -2586,9 +2586,19 @@ CSV, JSON, maybe other file types in C<new_from_file()> and C<file()>.
 
 =head1 SEE ALSO
 
-The L<Data::Table|Data::Table> module on CPAN provides a more conventionally
-opaque object that does many of the same things as this module, and also 
-a lot more.
+Some other modules that have some similarities include:
+
+=over
+
+=item L<Data::Table|Data::Table>
+
+=item L<PDL|PDL>
+
+=item L<Text::Table|Text::Table>
+
+=back
+
+These all appear much more powerful than Array::2D and may better suit your use.
 
 =head1 DEPENDENCIES
 
