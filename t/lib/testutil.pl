@@ -253,7 +253,7 @@ sub generic_test {
         object => sub { $to_test{object}->$method(@arguments) },
         ref    => sub { Array::2D->$method( $to_test{ref}, @arguments ) }
     );
-
+    
     if ( $t{exception} ) {
         test_exception { $process{object}->() } $t{description}, $t{exception};
         test_exception { $process{ref}->() } $t{description},    $t{exception};
@@ -265,15 +265,16 @@ sub generic_test {
         _run_code_and_warn_maybe (sub {
             $returned
               = $t{returns_a_list}
-              ? [ &{ $process{$array_type} } ]
-              : &{ $process{$array_type} }
+              ? [  $process{$array_type}->()  ]
+              :  $process{$array_type}->() ;
+              note "still running";
         },
         $t{warning}, $description);
         
         if ( $t{test_procedure} ne 'altered' ) {
             is_deeply( $returned, $t{expected},
                 "$method: $description: $array_type: correct result" );
-
+                
             if ( $t{check_blessing} ) {
                 if ($t{check_blessing} eq 'always'
                     or (    $t{check_blessing} eq 'as_orignal'
@@ -417,6 +418,8 @@ sub _get_arguments {
             @arguments = $t_r->{arguments};
         }
     }
+    
+    return @arguments;
 
 }
 
