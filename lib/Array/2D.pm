@@ -2590,6 +2590,10 @@ Some other modules that have some similarities include:
 
 =over
 
+=item L<Data::CTable|Data::CTable>
+
+=item L<Data::ShowTable|Data::ShowTable>
+
 =item L<Data::Table|Data::Table>
 
 =item L<PDL|PDL>
@@ -2599,6 +2603,9 @@ Some other modules that have some similarities include:
 =back
 
 These all appear much more powerful than Array::2D and may better suit your use.
+
+Another relevant module is L<Data::ShowTable|Data::ShowTable>, 
+which creates output formats such as ASCII art boxes and HTML.
 
 =head1 DEPENDENCIES
 
