@@ -120,12 +120,12 @@ array itself.
 
 # core modules
 use Carp;
-use List::Util(qw/any all max min none/);
+use List::Util(qw/max min/);
 use POSIX (qw/floor ceil/);
 use Scalar::Util(qw/blessed reftype/);
 
 # non-core modules
-use List::MoreUtils(qw/natatime/);
+use List::MoreUtils 0.28 (qw/natatime any all none/);
 use Params::Validate(qw/validate ARRAYREF HASHREF/);
 
 ### Test for Ref::Util and if present, use it
@@ -2593,7 +2593,7 @@ a lot more.
 
 =item Perl 5.8.1 or higher
 
-=item List::MoreUtils
+=item List::MoreUtils, 0.28 or higher
 
 =item Params::Validate
 
