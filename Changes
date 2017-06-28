@@ -2,12 +2,18 @@ Revision history for Perl extension Array-2D
 
 {{$NEXT}}
 
+0.001_002 2017-06-28T15:04:52Z
+
     - Use any, all, none from List::MoreUtils instead of List::Util,
       since we are already requiring List::MoreUtils and those were
       only added to List::Util relatively recently.
 
     - Required a version of List::MoreUtils with current behavior for
       any, all, and none.  Version 0.28 came out in 2010.
+
+    - Documentation fixes.
+
+    - Rename test files so they don't contain spaces.
 
 0.001_001 2017-06-26T07:07:24Z
 

@@ -5,7 +5,7 @@ use 5.008001;
 use strict;
 use warnings;
 
-our $VERSION = '0.001_001';
+our $VERSION = '0.001_002';
 $VERSION = eval $VERSION;   ## no critic (BuiltinFunctions::ProhibitStringyEval)
 
 ## no critic (RequirePodAtEnd)
@@ -18,7 +18,7 @@ Array::2D - Methods for simple array-of-arrays data structures
 
 =head1 VERSION
 
-This documentation refers to version 0.001_001
+This documentation refers to version 0.001_002
 
 =head2 NOTICE
 
