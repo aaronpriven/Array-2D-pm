@@ -1,69 +1,76 @@
-# NAME
+=encoding utf8
+
+=head1 NAME
 
 Array::2D - Methods for simple array-of-arrays data structures
 
-# VERSION
+=head1 VERSION
 
-This documentation refers to version 0.001\_001
+This documentation refers to version 0.001_001
 
-# NOTICE
+=head1 NOTICE
 
 This is alpha software.  Method names and behaviors are subject to change.
 The test suite has significant omissions.
 
-# SYNOPSIS
+=head1 SYNOPSIS
 
-    use Array::2D;
-    my $array2d = Array::2D->new( [ qw/a b c/ ] , [ qw/w x y/ ] );
+ use Array::2D;
+ my $array2d = Array::2D->new( [ qw/a b c/ ] , [ qw/w x y/ ] );
 
-    # $array2d contains
+ # $array2d contains
 
-    #     a  b  c
-    #     w  x  y
+ #     a  b  c
+ #     w  x  y
 
-    $array2d->push_col (qw/d z/);
+ $array2d->push_col (qw/d z/);
 
-    #     a  b  c  d
-    #     w  x  y  z
+ #     a  b  c  d
+ #     w  x  y  z
 
-    say $array2d->[0][1];
-    # prints "b"
+ say $array2d->[0][1];
+ # prints "b"
 
-# DESCRIPTION
+=head1 DESCRIPTION
 
 Array::2D is a module that adds useful methods to Perl's
 standard array of arrays ("AoA") data structure, as described in 
-[Perl's perldsc documentation](https://metacpan.org/pod/perldsc) and 
-[Perl's perllol documentation](https://metacpan.org/pod/perllol).  That is, an array that
+L<Perl's perldsc documentation|perldsc> and 
+L<Perl's perllol documentation|perllol>.  That is, an array that
 contains other arrays:
 
-    [ 
-      [ 1, 2, 3 ] , 
-      [ 4, 5, 6 ] ,
-    ]
+ [ 
+   [ 1, 2, 3 ] , 
+   [ 4, 5, 6 ] ,
+ ]
 
 This module provides methods for using that standard construction.
 
-# DOCUMENTATION
+=head1 DOCUMENTATION
 
 Full documentation is located in "plain old documentation" within
 the 2D.pm module.
 
-# AUTHOR
+=head1 AUTHOR
 
 Aaron Priven <apriven@actransit.org>
 
-# COPYRIGHT & LICENSE
+=head1 COPYRIGHT & LICENSE
 
 Copyright 2015, 2017
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either:
 
-- the GNU General Public License as published by the Free
+=over 4
+
+=item * the GNU General Public License as published by the Free
 Software Foundation; either version 1, or (at your option) any
 later version, or
-- the Artistic License version 2.0.
+
+=item * the Artistic License version 2.0.
+
+=back
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of

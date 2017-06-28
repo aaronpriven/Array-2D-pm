@@ -4,4 +4,5 @@ authority="cpan:AARONRP"
 
 module_maker="ModuleBuildTiny"
 license="perl_5"
+readme_from="README.pod"
 
