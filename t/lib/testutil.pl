@@ -9,7 +9,7 @@ binmode $builder->failure_output, ":encoding(utf8)";
 binmode $builder->todo_output,    ":encoding(utf8)";
 
 use Scalar::Util(qw/blessed reftype/);
-use List::Util ('uniq');
+use List::MoreUtils ('uniq');
 
 sub is_blessed {
     my $obj         = shift;

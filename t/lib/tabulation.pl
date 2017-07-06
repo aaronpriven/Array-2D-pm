@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use utf8;
 use Test::More 0.98;
-use Test::Warn;
 use Array::2D;
 
 BEGIN {
