@@ -496,13 +496,16 @@ sub new_to_term_width {
 =item B<<< new_from_tsv(I<tsv_string, tsv_string...>) >>>
 
 Returns a new object from a string containing tab-separated values. 
-The string is first split into lines (delimited by carriage returns,
-line feeds, a CR/LF pair, or other characters matching Perl's \R) and
-then split into values by tabs.
+The string is first split into lines and then split into values by tabs.
 
-If multiple strings are provided, they will be considered additional
-lines. So, if one has already read a TSV file, one can pass the entire contents, 
-the series of lines in the TSV file, or a combination of two.
+Under perls earlier than 5.10.0, lines must be separated by a line feed.
+Under perl 5.10 or later, lines can be separated by by carriage returns,
+line feeds, a CR/LF pair, or other characters matching Perl's \R (see
+L<perlrebackslash|perlrebackslash>).
+
+If multiple strings are provided, they will be considered additional lines. So,
+if one has already read a TSV file, one can pass the entire contents, the
+series of lines in the TSV file, or a combination of two.
 
 Note that this is not a routine that reads TSV I<files>, just TSV
 I<strings>, which may or may not have been read from a file. See
@@ -513,7 +516,13 @@ files (and other kinds).
 
 sub new_from_tsv {
     my $class = shift;
-    my @lines = map { split(/\R/) } @_;
+    my @lines;
+    if ( $] lt '5.010') {
+       @lines = map { split(/\n/) } @_;
+    } else {
+       @lines = map { split(/\R/) } @_;
+    }
+
     my $self  = [ map { [ split(/\t/) ] } @lines ];
 
     CORE::bless $self, $class;
