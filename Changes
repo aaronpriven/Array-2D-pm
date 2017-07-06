@@ -2,6 +2,11 @@ Revision history for Perl extension Array-2D
 
 {{$NEXT}}
 
+0.001_004 2017-07-06T06:31:05Z
+
+     - Added new code to use "\n" instead of "\R" as the line 
+       delimiter when running under perls before 5.10. 
+
 0.001_003 2017-07-06T06:13:12Z
 
     - Corrected the loading of test modules so it works
