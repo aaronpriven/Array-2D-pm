@@ -2,11 +2,12 @@ use strict;
 use warnings;
 use Test::More 0.98;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
     $Array::2D::NO_REF_UTIL = 1;
-
-    do './t/lib/dimensions.pl' // do './lib/dimensions.pl'
-      // die "Can't load dimensions.pl";
+    require 'dimensions.pl';
 }
 
 note(q[Check array dimensions]);

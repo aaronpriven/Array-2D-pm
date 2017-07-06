@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    do './t/lib/samples.pl' // do './lib/samples.pl'
-      // die "Can't load samples.pl";
+    require 'samples.pl';
 }
 
 our $sample_ref;

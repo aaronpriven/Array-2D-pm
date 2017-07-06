@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    do './t/lib/tabulation.pl' // do './lib/tabulation.pl'
-      // die "Can't load tabulation.pl";
+    require 'tabulation.pl';
 }
 
 note('Use Unicode::GCString for determining column widths');

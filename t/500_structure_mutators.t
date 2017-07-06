@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    do './t/lib/samples.pl' // do './lib/samples.pl'
-      // die "Can't load samples.pl";
+    require 'samples.pl';
 }
 
 our ( $one_row_ref, $one_col_ref, $one_col_test );
@@ -44,7 +46,7 @@ my @tests = (
         },
         {   test_array =>
               [ [ undef, qw/b c/ ], [ 1, 2, 3, 4, ], [qw/x y z/], ['q'], ],
-            expected => [ qw/b c/, 1, 2, 3, 4,, qw/x y z/, 'q', ],
+            expected    => [ qw/b c/, 1, 2, 3, 4,, qw/x y z/, 'q', ],
             description => 'ragged array',
         },
         {   test_array => $one_row_ref,
@@ -66,8 +68,8 @@ my @tests = (
 );
 
 my %defaults = (
-    transpose => { test_procedure => 'contextual' , check_blessing => 'always'},
-    flattened => { test_procedure => 'results', returns_a_list => 1 }
+    transpose => { test_procedure => 'contextual', check_blessing => 'always' },
+    flattened => { test_procedure => 'results',    returns_a_list => 1 }
 );
 
-plan_and_run_generic_tests (\@tests, \%defaults);
+plan_and_run_generic_tests( \@tests, \%defaults );

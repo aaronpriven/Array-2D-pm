@@ -3,15 +3,11 @@ use warnings;
 use utf8;
 use Test::More 0.98;
 use Test::Warn;
+use Array::2D;
 
-#<<< no perltidy
 BEGIN {
-    do './t/lib/testutil.pl' // # first used when actually testing
-      do './lib/testutil.pl' // # latter two used  for syntax checking
-      do './testutil.pl' //     # within Eclipse
-      die "Can't load testutil.pl";
+    require 'testutil.pl';
 }
-#>>>
 
 my $tab_test = [
     [qw/one two three four/],     [qw/five six seven eight/],
@@ -477,27 +473,21 @@ our @term_width_tests = (
         separator      => '--',
         width          => 19,
         expected_array => [
-            [qw/a   eee iii mmm/], 
-            [qw/bbb fff jjj/],
-            [qw/ccc ggg k  /],       
-            [qw/ddd hhh lll/],
+            [qw/a   eee iii mmm/], [qw/bbb fff jjj/],
+            [qw/ccc ggg k  /],     [qw/ddd hhh lll/],
         ],
         expected_tabulated => [
             'a  --eee--iii--mmm', 'bbb--fff--jjj',
-            'ccc--ggg--k', 'ddd--hhh--lll',
+            'ccc--ggg--k',        'ddd--hhh--lll',
         ],
     },
-    {   description    => 'with zero-width separator',
-        separator      => '',
-        width          => 19,
-        list           => [qw/a bbb ccc ddd eee fff ggg hhh iii jjj k lll/],
-        expected_array => [
-            [qw/a   ccc eee ggg iii k/], 
-            [qw/bbb ddd fff hhh jjj lll/],
-        ],
-        expected_tabulated =>
-          [ 'a  ccceeegggiiik',
-            'bbbdddfffhhhjjjlll', ],
+    {   description => 'with zero-width separator',
+        separator   => '',
+        width       => 19,
+        list        => [qw/a bbb ccc ddd eee fff ggg hhh iii jjj k lll/],
+        expected_array =>
+          [ [qw/a   ccc eee ggg iii k/], [qw/bbb ddd fff hhh jjj lll/], ],
+        expected_tabulated => [ 'a  ccceeegggiiik', 'bbbdddfffhhhjjjlll', ],
     },
 );
 

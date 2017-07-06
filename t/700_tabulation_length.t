@@ -1,17 +1,14 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    do './t/lib/tabulation.pl' // do './lib/tabulation.pl'
-      // die "Can't load tabulation.pl";
+    $Array::2D::NO_GCSTRING = 1;
+    require 'tabulation.pl';
 }
-
-BEGIN { 
-  $Array::2D::NO_GCSTRING = 1;
-}
-
-use Array::2D;
 
 note("Use perl's length function for determining text column widths");
 
-run_tabulation_tests(); 
+run_tabulation_tests();

@@ -1,14 +1,12 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
     $Array::2D::NO_REF_UTIL = 1;
-
-    #<<<
-    do './t/lib/construction.pl' //  # used in testing
-      do './lib/construction.pl' //  # used syntax checking in Eclipse
-      die "Can't load construction.pl";
-    #>>>
+    require 'construction.pl';
 }
 
 note("Use perl's ref function for checking array references");

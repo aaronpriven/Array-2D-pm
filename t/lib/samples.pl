@@ -5,14 +5,9 @@ use Test::More 0.98;
 use lib './lib';
 use Array::2D;
 
-#<<< no perltidy
 BEGIN {
-    do './t/lib/testutil.pl' // # first used when actually testing
-      do './lib/testutil.pl' // # latter two used  for syntax checking
-      do './testutil.pl' //     # within Eclipse
-      die "Can't load testutil.pl";
+    require 'testutil.pl';
 }
-#>>>
 
 # $sample_test is the reference to which things are compared
 

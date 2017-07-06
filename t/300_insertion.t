@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    do './t/lib/testutil.pl' // do './lib/testutil.pl'
-      // die "Can't load testutil.pl";
+    require 'testutil.pl';
 }
 
 my $ins_ref = [ [ 'a', 1, 'x' ], [ 'b', 2, 'y' ], [ 'c', 3, 'z' ], ];

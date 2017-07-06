@@ -3,8 +3,7 @@ use warnings;
 use Test::More 0.98;
 
 BEGIN {
-    do './t/lib/samples.pl' // do './lib/samples.pl' // do './samples.pl'
-      // die "Can't load samples.pl";
+    require 'samples.pl';
 }
 
 our ( $sample_obj, $sample_ref );

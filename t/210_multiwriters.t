@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    do './t/lib/testutil.pl' // do './lib/testutil.pl'
-      // die "Can't load testutil.pl";
+    require 'testutil.pl';
 }
 
 a2dcan('set_rows');

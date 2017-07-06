@@ -4,14 +4,9 @@ use warnings;
 # This is used to hold common routines run by by 010_construction_ref.t and
 #  011_constructon_refutil.t
 
-#<<< no perltidy
 BEGIN {
-    do './t/lib/testutil.pl' // # first used when actually testing
-      do './lib/testutil.pl' // # latter two used  for syntax checking
-      do './testutil.pl' //     # within Eclipse
-      die "Can't load testutil.pl";
+    require 'testutil.pl';
 }
-#>>>
 
 sub test_construction {
 

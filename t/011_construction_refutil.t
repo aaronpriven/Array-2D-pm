@@ -1,12 +1,11 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+use lib "$Bin/lib";
+
 BEGIN {
-    #<<<
-    do './t/lib/construction.pl' //  # used in testing
-      do './lib/construction.pl' //    # used syntax checking in Eclipse
-      die "Can't load construction.pl";
-    #>>>
+   require 'construction.pl';
 }
 
 note("Use Ref::Util functions for checking array references");
