@@ -65,7 +65,7 @@
          "web" : "https://github.com/aaronpriven/Array-2D-pm"
       }
    },
-   "version" : "0.001_002",
+   "version" : "0.001_003",
    "x_authority" : "cpan:AARONRP",
    "x_contributors" : [
       "Aaron Priven <aaron@priven.com>"

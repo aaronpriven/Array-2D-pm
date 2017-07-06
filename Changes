@@ -2,6 +2,14 @@ Revision history for Perl extension Array-2D
 
 {{$NEXT}}
 
+0.001_003 2017-07-06T06:13:12Z
+
+    - Corrected the loading of test modules so it works
+      in more perls (I hope -- thank you CPAN Testers!)
+
+    - Identified some more similar modules to list in
+      documentation
+
 0.001_002 2017-06-28T15:04:52Z
 
     - Use any, all, none from List::MoreUtils instead of List::Util,
