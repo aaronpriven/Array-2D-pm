@@ -498,10 +498,9 @@ sub new_to_term_width {
 Returns a new object from a string containing tab-separated values. 
 The string is first split into lines and then split into values by tabs.
 
-Under perls earlier than 5.10.0, lines must be separated by a line feed.
-Under perl 5.10 or later, lines can be separated by by carriage returns,
-line feeds, a CR/LF pair, or other characters matching Perl's \R (see
-L<perlrebackslash|perlrebackslash>).
+
+Lines can be separated by by carriage returns, line feeds, a CR/LF pair, or
+other characters matching Perl's \R (see L<perlrebackslash|perlrebackslash>).
 
 If multiple strings are provided, they will be considered additional lines. So,
 if one has already read a TSV file, one can pass the entire contents, the
@@ -516,12 +515,7 @@ files (and other kinds).
 
 sub new_from_tsv {
     my $class = shift;
-    my @lines;
-    if ( $] lt '5.010') {
-       @lines = map { split(/\n/) } @_;
-    } else {
-       @lines = map { split(/\R/) } @_;
-    }
+    my @lines = map { split(/\R/) } @_;
 
     my $self  = [ map { [ split(/\t/) ] } @lines ];
 
@@ -2620,7 +2614,7 @@ which creates output formats such as ASCII art boxes and HTML.
 
 =over
 
-=item Perl 5.8.1 or higher
+=item Perl 5.10 or higher
 
 =item List::MoreUtils, 0.28 or higher
 

@@ -44,7 +44,7 @@
          "requires" : {
             "List::MoreUtils" : "0.28",
             "Params::Validate" : "0",
-            "perl" : "5.008001"
+            "perl" : "5.010"
          }
       },
       "test" : {
