@@ -2,6 +2,15 @@ Revision history for Perl extension Array-2D
 
 {{$NEXT}}
 
+0.001_005 2017-07-07T05:40:01Z
+
+     - Removed Perl 5.8 support, since I wasn't able to install
+       Perl 5.8 to test it locally and my attempt to guard against
+       invalid escape codes wasn't successful.
+
+     - In tests, changed List::Util::uniq to List::MoreUtils::uniq and
+       removed pointless inclusion of (no longer used) Test::Warn.
+
 0.001_004 2017-07-06T06:31:05Z
 
      - Added new code to use "\n" instead of "\R" as the line 
