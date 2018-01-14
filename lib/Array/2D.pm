@@ -632,13 +632,13 @@ my $filetype_from_ext_r = sub {
                       \z      # end of the string
                       ]x;
 
-    my $fext = fc($ext);
+    my $lext = lc($ext);
 
-    if ( $fext eq fc('xlsx') ) {
+    if ( $lext eq lc('xlsx') ) {
         return 'xlsx';
     }
 
-    if ( any { $fext eq fc($_) } qw/tsv tab txt/ ) {
+    if ( any { $lext eq lc($_) } qw/tsv tab txt/ ) {
         return 'tsv';
     }
 
