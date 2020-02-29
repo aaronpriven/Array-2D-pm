@@ -2595,8 +2595,6 @@ Some other modules that have some similarities include:
 
 =item L<Data::CTable|Data::CTable>
 
-=item L<Data::ShowTable|Data::ShowTable>
-
 =item L<Data::Table|Data::Table>
 
 =item L<PDL|PDL>
@@ -2637,7 +2635,7 @@ Aaron Priven <apriven@actransit.org>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2015, 2017
+Copyright 2015-2018
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either:
