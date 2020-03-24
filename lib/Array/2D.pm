@@ -341,7 +341,7 @@ sub bless {    ## no critic (Subroutines::ProhibitBuiltInHomonyms)
 
     return CORE::bless [@rows], $class;
 
-} ## tidy end: sub bless
+}
 
 ## use critic
 
@@ -491,7 +491,7 @@ sub new_to_term_width {
 
     return $array2d, $tabulated;
 
-} ## tidy end: sub new_to_term_width
+}
 
 =item B<<< new_from_tsv(I<tsv_string, tsv_string...>) >>>
 
@@ -517,7 +517,7 @@ sub new_from_tsv {
     my $class = shift;
     my @lines = map { split(/\R/) } @_;
 
-    my $self  = [ map { [ split(/\t/) ] } @lines ];
+    my $self = [ map { [ split(/\t/) ] } @lines ];
 
     CORE::bless $self, $class;
     return $self;
@@ -561,12 +561,63 @@ sub new_from_xlsx {
         croak $parser->error();
     }
 
-    my $sheet = $workbook->worksheet($sheet_requested);
+    my ( $error, $obj )
+      = $class->_new_from_xlsx_sheet( $workbook, $sheet_requested );
+    return $obj unless $error;
 
+    croak( "$error in $xlsx_filespec in " . __PACKAGE__ . '->new_from_xlsx' );
+
+}
+
+=item B<<< new_from_xlsx_sheet(I<workbook, sheet_requested>) >>>
+
+This method is used to fetch data from an Excel spreadsheet that has already
+been loaded via the Spreadsheet::ParseXLSX module.
+
+      my $parser = Spreadsheet::ParseXLSX->new;
+      my $workbook = $parser->parse("file.xlsx");
+      my $array2d = Array::2D->new($workbook, 'Sheet2');
+
+This method will actually accept any object that uses the same interface as
+C<Spreadsheet::ParseXLSX>, including C<Spreadsheet::ParseExcel>.
+
+Returns a new object from one of worksheets in a workbook, consisting of the
+rows and columns of that sheet. The I<sheet_requested> parameter is passed
+directly to the C<< ->worksheet >> method of the workbook object.
+C<Spreadsheet::ParseXLSX> accepts a name or an index. If nothing is passed, it
+requests sheet 0 (the first sheet).
+
+=cut
+
+sub new_from_xlsx_sheet {
+    my $class           = shift;
+    my $workbook        = shift;
+    my $sheet_requested = shift || 0;
+
+    my ( $error, $obj )
+      = $class->_new_from_xlsx_sheet( $workbook, $sheet_requested );
+    return $obj unless $error;
+
+    my $file = $workbook->get_filename();
+    if ( not defined $file ) {
+        $file = '';
+    }
+    else {
+        $file = " in $file";
+    }
+    croak "$error $file in " . __PACKAGE__ . '->new_from_xlsx_sheet';
+
+}
+
+sub _new_from_xlsx_sheet {
+    my $class           = shift;
+    my $workbook        = shift;
+    my $sheet_requested = shift;
+    my $error;
+
+    my $sheet = $workbook->worksheet($sheet_requested);
     if ( !defined $sheet ) {
-        croak "Sheet $sheet_requested not found in $xlsx_filespec in "
-          . __PACKAGE__
-          . '->new_from_xlsx';
+        return ( "Sheet $sheet_requested not found", undef );
     }
 
     my ( $minrow, $maxrow ) = $sheet->row_range();
@@ -590,10 +641,9 @@ sub new_from_xlsx {
         push @rows, \@cells;
 
     }
+    return ($error, $class->bless( \@rows ));
 
-    return $class->bless( \@rows );
-
-} ## tidy end: sub new_from_xlsx
+}
 
 =item B<<< new_from_file(I<filespec>, I<filetype>) >>>
 
@@ -670,7 +720,7 @@ sub new_from_file {
       . __PACKAGE__
       . '->new_from_file';
 
-} ## tidy end: sub new_from_file
+}
 
 ################################################################
 ### shim allowing being called as either class or object method
@@ -723,7 +773,7 @@ a new, unblessed array.
 This is usually pointless, as Perl lets you ignore the object-ness of
 any object and access the data inside, but sometimes certain modules
 don't like to break object encapsulation, and this will allow getting
-around that.
+around that .
 
 Note that while modifying the elements inside the rows will modify the 
 original 2D array, modifying the outer arrayref will not (unless
@@ -804,7 +854,7 @@ sub transpose {
     @{$self} = @{$new};
     return;
 
-} ## tidy end: sub transpose
+}
 
 =item B<flattened()>
 
@@ -962,7 +1012,7 @@ sub col {
     # the element if it's valid in that row, otherwise undef
     pop @col while @col and not defined $col[-1];    # prune
     return @col;
-} ## tidy end: sub col
+}
 
 =item B<< rows(I<row_idx, row_idx...>) >>
 
@@ -1066,7 +1116,7 @@ sub slice_cols {
     CORE::bless $return, $class;
     $return->prune;
     return $return;
-} ## tidy end: sub slice_cols
+}
 
 =item B<slice(I<row_index_from, row_index_to, col_index_from, col_index_to>)>
 
@@ -1144,7 +1194,7 @@ sub slice {
     return $new if defined wantarray;
     @{$self} = @{$new};
     return;
-} ## tidy end: sub slice
+}
 
 =back
 
@@ -1216,7 +1266,7 @@ sub set_col {
     }
     return;
 
-} ## tidy end: sub set_col
+}
 
 =item B<< set_rows(I<start_row_idx, array_of_arrays>) >>
 
@@ -1299,7 +1349,7 @@ sub set_slice {
 
     return;
 
-} ## tidy end: sub set_slice
+}
 
 =back
 
@@ -1368,7 +1418,7 @@ sub ins_col {
 
     return $class->width($self) if defined wantarray;
     return;
-} ## tidy end: sub ins_col
+}
 
 =item B<ins_rows(I<row_idx, aoa_ref>)>
 
@@ -1552,7 +1602,7 @@ sub push_cols {
     return $class->width($self) if defined wantarray;
     return;
 
-} ## tidy end: sub push_cols
+}
 
 =back
 
@@ -1620,7 +1670,7 @@ sub del_col {
 
     return @deleted if defined wantarray;
     return;
-} ## tidy end: sub del_col
+}
 
 =item B<del_rows(I<row_idx>, I<row_idx>...)>
 
@@ -1650,7 +1700,7 @@ sub del_rows {
     $class->prune($self);
     return $deleted if defined wantarray;
     return;
-} ## tidy end: sub del_rows
+}
 
 =item B<del_cols(I<col_idx>, I<col_idx>...)>
 
@@ -1680,7 +1730,7 @@ sub del_cols {
     $class->prune($self);
     return $deleted if defined wantarray;
     return;
-} ## tidy end: sub del_cols
+}
 
 =item B<shift_row()>
 
@@ -1880,7 +1930,7 @@ sub prune_callback {
     }
 
     return $self;
-} ## tidy end: sub prune_callback
+}
 
 =item B<pad(I<value>)>
 
@@ -1915,7 +1965,7 @@ sub pad {
 
     return $self;
 
-} ## tidy end: sub pad
+}
 
 =back
 
@@ -1966,7 +2016,7 @@ sub apply {
         }
     }
     return $self;
-} ## tidy end: sub apply
+}
 
 =item B<trim()>
 
@@ -2072,7 +2122,7 @@ sub hash_of_rows {
     }
 
     return \%hash;
-} ## tidy end: sub hash_of_rows
+}
 
 =item B<hash_of_row_elements(I<key_column_idx, value_column_idx>)>
 
@@ -2117,7 +2167,7 @@ sub hash_of_row_elements {
     }
 
     return \%hash;
-} ## tidy end: sub hash_of_row_elements
+}
 
 =back
 
@@ -2215,13 +2265,13 @@ my $prune_space_list_cr = sub {
 
                 #$cells[$this_col]
                 #  = sprintf( '%-*s', $width, $cells[$this_col] );
-                
-                my $spaces = $width - $text_columns_cr->( $cells[$this_col]);
-                $cells[$this_col] .= ( ' ' x $spaces) if $spaces > 0; 
+
+                my $spaces = $width - $text_columns_cr->( $cells[$this_col] );
+                $cells[$this_col] .= ( ' ' x $spaces ) if $spaces > 0;
             }
             push @lines, join( $separator, @cells );
 
-        } ## tidy end: foreach my $record_r ( @{$self...})
+        }
 
         return \@lines;
 
@@ -2331,7 +2381,7 @@ sub tsv_lines {
 
     return wantarray ? @lines : \@lines;
 
-} ## tidy end: sub tsv_lines
+}
 
 sub tsv {
 
@@ -2356,7 +2406,7 @@ sub tsv {
     }
     return join( "\n", @$lines_r ) . "\n";
 
-} ## tidy end: sub tsv
+}
 
 =item B<< file(...) >>
 
@@ -2428,7 +2478,7 @@ sub file {
         return;
     }
     croak "Unrecognized type $type in " . __PACKAGE__ . '->file';
-} ## tidy end: sub file
+}
 
 =item B<< xlsx(...) >>
 
@@ -2510,7 +2560,7 @@ sub xlsx {
 
     return $workbook->close();
 
-} ## tidy end: sub xlsx
+}
 
 1;
 
