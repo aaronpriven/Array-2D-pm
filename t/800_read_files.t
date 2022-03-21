@@ -12,6 +12,8 @@ a2dcan('new_from_tsv');
 #high
 
 a2dcan('new_from_xlsx');
+
+a2dcan('new_from_xlsx_sheet');
 #high
 
 a2dcan('new_from_file');
